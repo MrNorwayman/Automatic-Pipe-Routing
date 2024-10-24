@@ -2,13 +2,6 @@ import numpy as np
 import Classes
 import time
 
-
-
-
-#
-
-
-#dsafd
 def main():
     #Variables de gestion de puntos
 
