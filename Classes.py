@@ -7,6 +7,10 @@ import re
 import heapq
 import itertools
 
+
+
+
+#Creacion de tuberia
 '''
 -----------------------DEFINICION DE CLASES----------------------
 '''
