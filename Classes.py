@@ -332,8 +332,6 @@ class Algoritmo:
         # Retornar los puntos
         return puntos_interpolados
 
-
-
     def d_star(self,
                inicio,
                final,
