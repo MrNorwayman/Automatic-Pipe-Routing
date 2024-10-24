@@ -289,7 +289,7 @@ class Nodo:
     def __lt__(self, otro):
         return self.g < otro.g
 ############
-
+import test_2
 ### D STAR ###
 class Algoritmo:
     def __init__(self):
@@ -299,6 +299,9 @@ class Algoritmo:
     
     def heuristica(self, nodo1, nodo2):  # Heurística euclidiana en 3D
         return np.linalg.norm(np.array(nodo1) - np.array(nodo2))
+
+    def generar_vecinos_polares(self, nodo, intervalo):
+        return None
 
     def generar_vecinos(self, nodo, k):   # Genera los vecinos inmediatos en 3D (26 direcciones: ejes y diagonales)
         if nodo.largo_recta < self.tramo_recto_min:
@@ -412,7 +415,7 @@ class Algoritmo:
                 
                 if vecino_pos not in mapa:
                     #Calcula movimiento y diferencial de movimiento para el nuevo Nodo
-                    movimiento = (np.array(vecino_pos) - np.array(nodo_actual.posicion))/intervalo
+                    movimiento = np.linalg.norm(np.array(vecino_pos) - np.array(nodo_actual.posicion))
                     dif_mov = nodo_actual.movimiento - movimiento
 
                     #Crea los nuevos nodos vecinos

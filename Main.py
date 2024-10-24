@@ -8,7 +8,7 @@ def main():
     #Costo aproximado de 380
     size_region = 100
     num_puntos = 1000000
-    intervalo = 5
+    intervalo = 15
     tramo_recto_minimo = 60
     tramo_recto_min_corte = 30
 
