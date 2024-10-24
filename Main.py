@@ -13,7 +13,7 @@ def main():
     tramo_recto_min_corte = 30
 
     #Extraccion de datos del STP
-    datos = Classes.buscar_y_extraer("STP.stp")
+    datos = Classes.buscar_y_extraer("C:/Users/GARCIAMA44/OneDrive - Carrier Corporation/Escritorio/TRABAJO/CODIGOS/TUBERIA/STP.stp")
 
     #Creacion de objeto de tuberia
     Tuberias = []
@@ -26,7 +26,7 @@ def main():
         Tuberias.append(Tubo)
 
     # Crear objeto STL y fragmentar
-    Maquina = Classes.STL("STL.stl")
+    Maquina = Classes.STL("C:/Users/GARCIAMA44/OneDrive - Carrier Corporation/Escritorio/TRABAJO/CODIGOS/TUBERIA/STL.stl")
     obstaculos = Maquina.fragmentacion(num_puntos, size_region)
     #Maquina.previsualizacion_puntos()
 
