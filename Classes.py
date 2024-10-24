@@ -300,7 +300,7 @@ class Algoritmo:
     def heuristica(self, nodo1, nodo2):  # Heurística euclidiana en 3D
         return np.linalg.norm(np.array(nodo1) - np.array(nodo2))
 
-    def generar_vecinos(self, nodo, k,):   # Genera los vecinos inmediatos en 3D (26 direcciones: ejes y diagonales)
+    def generar_vecinos(self, nodo, k):   # Genera los vecinos inmediatos en 3D (26 direcciones: ejes y diagonales)
         if nodo.largo_recta < self.tramo_recto_min:
             movimientos = [np.array(nodo.movimiento)*k]
         else:

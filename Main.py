@@ -28,7 +28,7 @@ def main():
     # Crear objeto STL y fragmentar
     Maquina = Classes.STL("C:/Users/GARCIAMA44/OneDrive - Carrier Corporation/Escritorio/TRABAJO/CODIGOS/TUBERIA/STL.stl")
     obstaculos = Maquina.fragmentacion(num_puntos, size_region)
-    Maquina.previsualizacion_puntos()
+    #Maquina.previsualizacion_puntos()
 
     Tuberias[0].actualizar_obstaculos(obstaculos)
 
