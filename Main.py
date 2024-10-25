@@ -7,8 +7,8 @@ def main():
 
     #Costo aproximado de 380
     size_region = 100
-    num_puntos = 1000000
-    intervalo = 15
+    num_puntos = 1000
+    intervalo = 25
     tramo_recto_minimo = 60
     tramo_recto_min_corte = 30
 
@@ -42,7 +42,7 @@ def main():
 
     #Crear tuberia
     for index, tubo in enumerate(Tuberias):
-        nube_puntos_tubo =tubo.crear_tuberia()
+        nube_puntos_tubo = tubo.crear_tuberia()
         Visualizador.add_punto(nube_puntos_tubo, [0, 1, index])
 
 if __name__ == "__main__":

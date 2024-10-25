@@ -1,14 +1,26 @@
 import numpy as np
 
-movimiento1 = np.array([0, 1])
-movimiento1 = movimiento1 / np.linalg.norm(movimiento1)
+def cartesiano_a_esferico(vector):
+    r = np.linalg.norm(vector)
+    vector = vector/r
+    theta = np.arctan2(vector[0], vector[2])
+    if theta < 0:
+        theta = np.pi*2 + theta
+    phi = np.arccos(vector[1])
+    if phi < 0:
+        phi = np.pi*2 + phi
+    return np.array([r, theta*180/np.pi, phi*180/np.pi])
 
-movimiento2 = np.array([np.cos(np.pi/2*1/2), np.sin(np.pi/2*1/2)])
-movimiento2 = movimiento2 / np.linalg.norm(movimiento2)
+v1 = [0.1, 1, 0.1]
+v2 = [0, 1, 0]
 
-movimiento_curva = np.array(movimiento2) - np.array(movimiento1)
-movimiento_curva = movimiento_curva / np.linalg.norm(movimiento_curva)
+v1 = v1 / np.linalg.norm(v1)
+print(cartesiano_a_esferico(v1))
+v1[2] = np.pi/2-v1[2]
 
-print(np.cos(np.pi/2*1/2))
-print(movimiento1, movimiento2)
-print(movimiento_curva)
+v2 = [0, 1, 0]
+v2 = v2 / np.linalg.norm(v2)
+print(cartesiano_a_esferico(v2))
+
+
+print(np.sqrt(v1[1]**2 + v1[2]**2))

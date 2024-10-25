@@ -243,7 +243,6 @@ class Nodo:
     def __init__(self,
                  posicion,
                  intervalo,
-                 angulo,
                  movimiento=None,
                  g=float('inf'),
                  padre=None,
@@ -257,6 +256,7 @@ class Nodo:
         self.angulo_curva = ang_curva
         self.largo_recta = lar_recta
         self.dif_mov = dif_mov
+        self.esfericas = cartesiano_a_esferico(movimiento)/np.linalg.norm(movimiento)
 
         #Diferencial de movimiento, para saber si es una recta o una curva
         self.posicion = posicion
@@ -264,27 +264,21 @@ class Nodo:
         
         self.padre = padre  # Nodo padre en el camino
 
-        
         if np.all(dif_mov == None):
             return None
         
         else:
             #Es una recta
-            if np.all(dif_mov == [0, 0, 0]):
+            if np.any(np.abs(self.movimiento) > np.linalg.norm(movimiento)*0.999):
                 self.largo_recta += intervalo
                 self.angulo_curva = 0
-
-                #Heuristica
-                #self.g -= -0.2
-
-            #Es una curva
+                self.g -= 0.5
+                return
+        
             else:
                 self.largo_recta = 0
-                self.angulo_curva += angulo
-                self.g += 0.5
-
-            return
-
+                self.angulo_curva +=22.5
+                self.g += 0.3
 
     def __lt__(self, otro):
         return self.g < otro.g
@@ -295,28 +289,34 @@ class Algoritmo:
     def __init__(self):
         self.angulo_curva = 0
         self.angulo_max = 180
-        self.intervalo_angular = 5
     
     def heuristica(self, nodo1, nodo2):  # Heurística euclidiana en 3D
         return np.linalg.norm(np.array(nodo1) - np.array(nodo2))
 
-    def generar_vecinos_polares(self, nodo, intervalo):
-        return None
+    def generar_vecinos(self, nodo, k, a):   # Genera los vecinos inmediatos en 3D (26 direcciones: ejes y diagonales)
+        movimientos = []
 
-    def generar_vecinos(self, nodo, k):   # Genera los vecinos inmediatos en 3D (26 direcciones: ejes y diagonales)
-        if nodo.largo_recta < self.tramo_recto_min:
-            movimientos = [np.array(nodo.movimiento)*k]
+        #Seguir la recta puede continuar así, depende de la posicion de los Nodos y suma el vector movimiento 
+        if (nodo.largo_recta < self.tramo_recto_min) and (nodo.largo_recta > 0):    
+            movimientos.append(np.array(nodo.movimiento) * k)
+
+        #Generacion de vecinos cambiando los angulos polares
         else:
-            movimientos = [
-                (k, 0, 0), (-k, 0, 0),
-                (0, k, 0), (0, -k, 0),
-                (0, 0, k), (0, 0, -k)
-            ]
-            
+            esfericas = []
+            esfericas.append([nodo.esfericas[0], nodo.esfericas[1] + a, nodo.esfericas[2]])
+            esfericas.append([nodo.esfericas[0], nodo.esfericas[1] - a, nodo.esfericas[2]])
+            esfericas.append([nodo.esfericas[0], nodo.esfericas[1], nodo.esfericas[2] + a])
+            esfericas.append([nodo.esfericas[0], nodo.esfericas[1], nodo.esfericas[2] - a])
+
+            for esferica in esfericas:
+                movimientos.append(esferico_a_cartesiano(esferica) * k)
+
+            movimientos.append(np.array(nodo.movimiento) * k)
+
         return [tuple(np.array(nodo.posicion) + np.array(mov)) for mov in movimientos]
 
     def es_cercano_a_obstaculo(self, vecino_pos, obstaculos, size_region_sqrt3, tol_rad):    # Función para comprobar si un punto está cerca de un obstáculo dentro de una tolerancia
-        for region in obstaculos:        
+        for region in obstaculos:
             if np.linalg.norm(np.array(vecino_pos) - np.array(region[0])) < size_region_sqrt3:   #Se usa 1.8 por ser un valor similar a sqrt(3)
                 for obstaculo in region[1]:
                     if np.linalg.norm(np.array(vecino_pos) - np.array(obstaculo)) < tol_rad:
@@ -346,12 +346,14 @@ class Algoritmo:
                vector_incio,
                vector_final,
                tramo_recto_min,
-               tramo_recto_min_corte):   # Algoritmo D* simplificado
+               tramo_recto_min_corte,
+               intervalo_angular = 22.5):   # Algoritmo D* simplificado
 
         self.tramo_recto_min = tramo_recto_min
         self.intervalo = intervalo
         self.vector_inicio = vector_incio
         self.vector_final = vector_final
+        self.intervalo_angular = intervalo_angular
 
         self.inicio = np.array(inicio) + np.array(self.vector_inicio)*self.tramo_recto_min
         self.final = np.array(final) + np.array(self.vector_final)* tramo_recto_min_corte
@@ -359,7 +361,6 @@ class Algoritmo:
         mapa = {}
         nodo_inicio = Nodo(posicion=self.inicio,
                            intervalo=self.intervalo,
-                           angulo=self.intervalo_angular,
                            movimiento=self.vector_inicio,
                            g=0,
                            lar_recta=self.tramo_recto_min,
@@ -380,7 +381,9 @@ class Algoritmo:
 
             # Imprimir información de la iteración actual
             if iteracion % 100 == 0:
-                print(f"Iteración {iteracion}: Costo acumulado {nodo_actual.g}")
+                print(f"\nIteración {iteracion}: Costo acumulado {nodo_actual.g}")
+                print(nodo_actual.movimiento)
+                print(nodo_actual.dif_mov)
 
             # Comprobar si estamos lo suficientemente cerca del objetivo (con tolerancia)
             if np.linalg.norm(np.array(nodo_actual.posicion) - np.array(self.final)) < 1.8*intervalo:
@@ -405,7 +408,7 @@ class Algoritmo:
                 return camino # Devuelve el camino en el orden correcto
 
             # Generar vecinos del nodo actual
-            for vecino_pos in self.generar_vecinos(nodo_actual, intervalo):
+            for vecino_pos in self.generar_vecinos(nodo_actual, self.intervalo, self.intervalo_angular):
                 # Comprobar si el vecino está cerca de algún obstáculo (dentro de la tolerancia)
                 if self.es_cercano_a_obstaculo(vecino_pos, obstaculos, size_region_factor, tol_rad):
                     continue  # Saltar si está demasiado cerca de un obstáculo
@@ -415,13 +418,12 @@ class Algoritmo:
                 
                 if vecino_pos not in mapa:
                     #Calcula movimiento y diferencial de movimiento para el nuevo Nodo
-                    movimiento = np.linalg.norm(np.array(vecino_pos) - np.array(nodo_actual.posicion))
+                    movimiento = (np.array(vecino_pos) - np.array(nodo_actual.posicion))
                     dif_mov = nodo_actual.movimiento - movimiento
 
                     #Crea los nuevos nodos vecinos
-                    vecino = Nodo(vecino_pos,
-                                  self.intervalo,
-                                  self.intervalo_angular,
+                    vecino = Nodo(posicion=vecino_pos,
+                                  intervalo=self.intervalo,
                                   movimiento=movimiento,
                                   g=nuevo_g,
                                   padre=nodo_actual,
@@ -429,6 +431,8 @@ class Algoritmo:
                                   ang_curva=nodo_actual.angulo_curva,
                                   lar_recta=nodo_actual.largo_recta,
                                   posicion_padre=nodo_actual.posicion)
+                    
+                    
                     
                     mapa[vecino_pos] = vecino
                     heapq.heappush(abierta, vecino)
@@ -454,6 +458,24 @@ class Algoritmo:
 -----------------------DEFINICION DE FUNCIONES----------------------
 '''
 ### INFORMACION STP ###
+def cartesiano_a_esferico(vector):
+        r = np.linalg.norm(vector)
+        vector = vector/r
+        theta = np.arctan2(vector[0], vector[2])
+        phi = np.arccos(vector[1])
+        return np.array([r, theta*180/np.pi, phi*180/np.pi])
+
+def esferico_a_cartesiano(vector):
+    r = vector[0]
+    theta = np.deg2rad(vector[1])  # Convertir theta a radianes
+    phi = np.deg2rad(vector[2])    # Convertir phi a radianes
+    
+    x = r * np.sin(phi) * np.cos(theta)
+    y = r * np.cos(phi)
+    z = r * np.sin(phi) * np.sin(theta)
+    
+    return np.array([x, y, z])
+
 def buscar_y_extraer(archivo):
     with open(archivo, "r") as file:
         lineas = file.readlines()
