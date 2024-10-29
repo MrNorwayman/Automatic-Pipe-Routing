@@ -316,9 +316,6 @@ class Algoritmo:
         self.angulo_max = 180
         self.intervalo_angular = 5
     
-    def heuristica(self, nodo1, nodo2):  # Heurística euclidiana en 3D
-        return np.linalg.norm(np.array(nodo1) - np.array(nodo2))
-
     def generar_vecinos(self, nodo, k,):   # Genera los vecinos inmediatos en 3D (26 direcciones: ejes y diagonales)
         if nodo.largo_recta < self.tramo_recto_min:
             movimientos = [np.array(nodo.movimiento)*k]
@@ -427,7 +424,7 @@ class Algoritmo:
                     continue  # Saltar si está demasiado cerca de un obstáculo
 
                 #Calcula la nueva heuristica
-                nuevo_g = nodo_actual.g + self.heuristica(nodo_actual.posicion, vecino_pos)
+                nuevo_g = np.linalg.norm(np.array(vecino_pos) - np.array(self.final))
                 
                 if vecino_pos not in mapa:
                     #Calcula movimiento y diferencial de movimiento para el nuevo Nodo
