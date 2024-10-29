@@ -12,6 +12,15 @@ import itertools
 '''
 ### TUBERIA ###
 class Tubo:
+
+    '''Inicializar objeto TUBO.
+        Datos entrada:  datos -> Datos de la tuberia extraidos del STP
+                        intervalo -> Distancia entre nodo y nodo
+                        size_region -> Tamaño de las divisiones de puntos del STL
+                        tramo_recto_min -> Tramo recto minimo establecido por el tubo
+                        tramo_recto_min_corte -> Tramo recto minimo posterior al corte de extremo
+
+        Retorno:        None                                                                        '''
     def __init__(self, datos, intervalo, size_region, tramo_recto_min = 70, tramo_recto_min_corte = 40):  #Inicializa el tubo
 
         self.tramo_recto_min = tramo_recto_min
@@ -22,15 +31,25 @@ class Tubo:
         self.no_puntos = np.empty((0,3)) #Puntos de la tuberia que se han probado y no sirven
         self.analizar_datos(datos)
         return None
+    
 
+    '''Añadir punto a el tubo
+        Datos entrada:  punto_nuevo -> Nuevo punto para añadir
+
+        Retorno:        Numpy array de puntos                                                                      '''
     def add_punto(self, punto_nuevo):   #Inserta un punto
         self.puntos = np.append(self.puntos, punto_nuevo)
         return self.puntos
     
+
+    '''Analiza los datos y los añade a variables del objeto
+        Datos entrada:  dato -> Datos extraidos del STP
+
+        Retorno:        None                                                                      '''
     def analizar_datos(self, dato):
 
         if dato[0].split("_")[1] == "29-57":
-            radio = 29.57/2
+            radio = 28.57/2
         else:
             radio = 10
 
