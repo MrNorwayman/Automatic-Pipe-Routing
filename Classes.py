@@ -11,12 +11,13 @@ import heapq
 '''
 ### TUBERIA ###
 class Tubo:
-    def __init__(self, datos, intervalo, size_region, tramo_recto_min = 70, tramo_recto_min_corte = 40):  #Inicializa el tubo
+    def __init__(self, datos, intervalo, size_region, tramo_recto_min = 70, tramo_recto_min_corte = 40, intervalo_angular = 30):  #Inicializa el tubo
 
         self.tramo_recto_min = tramo_recto_min
         self.tramo_recto_min_corte = tramo_recto_min_corte
         self.intervalo = intervalo
         self.size_region = size_region
+        self.intervalo_angular = intervalo_angular
         self.puntos = np.empty((0,3))    #Puntos de la tuberia actuales
         self.no_puntos = np.empty((0,3)) #Puntos de la tuberia que se han probado y no sirven
         self.analizar_datos(datos)
@@ -28,10 +29,12 @@ class Tubo:
     
     def analizar_datos(self, dato):
 
-        if dato[0].split("_")[1] == "29-57":
-            radio = 29.57/2
+        if dato[0].split("_")[1] == "138":
+            radio = 28.57/2
+            self.radio_curva = 57
         else:
-            radio = 10
+            radio = 12.7/2
+            self.radio_curva = 31
 
         tolerancia = dato[0].split("_")[2]
         inicio = dato[1]
@@ -78,7 +81,9 @@ class Tubo:
                            vector_incio=self.vector_inicio,
                            vector_final=self.vector_final,
                            tramo_recto_min=self.tramo_recto_min,
-                           tramo_recto_min_corte=self.tramo_recto_min_corte)
+                           tramo_recto_min_corte=self.tramo_recto_min_corte,
+                           intervalo_angular=self.intervalo_angular,
+                           radio_curvatura=self.radio_curva)
         nube_puntos_tubo = np.empty((0, 3))
         for punto in camino:
             esfera = puntos_a_esfera(punto, self.radio, 10000)
@@ -287,32 +292,30 @@ class Algoritmo:
     def __init__(self):
         self.angulo_curva = 0
         self.angulo_max = 180
-    
+
     def heuristica(self, nodo1, nodo2):  # Heurística euclidiana en 3D
         return np.linalg.norm(np.array(nodo1) - np.array(nodo2))
 
-    def generar_vecinos(self, nodo, k, a = np.deg2rad(45)):   # Genera los vecinos inmediatos en 3D (26 direcciones: ejes y diagonales)
+    def generar_vecinos(self, nodo):   # Genera los vecinos inmediatos en 3D (26 direcciones: ejes y diagonales)
 
         movimientos = []
-        if (nodo.largo_recta < self.tramo_recto_min) and (nodo.largo_recta > 0):    
-            movimientos.append(np.array(nodo.movimiento))
+        if ((nodo.largo_recta < self.tramo_recto_min) and (nodo.largo_recta > 0) or (nodo.angulo_curva > self.angulo_max)):    
+            movimientos.append(np.array(nodo.movimiento) * self.intervalo)
 
         #Generacion de vecinos cambiando los angulos polares
         else:
             esfericas = []
-            esfericas.append([nodo.esfericas[0], nodo.esfericas[1] + a, nodo.esfericas[2]])
-            esfericas.append([nodo.esfericas[0], nodo.esfericas[1] - a, nodo.esfericas[2]])
-            esfericas.append([nodo.esfericas[0], nodo.esfericas[1], nodo.esfericas[2] + a])
-            esfericas.append([nodo.esfericas[0], nodo.esfericas[1], nodo.esfericas[2] - a])
+            esfericas.append([nodo.esfericas[0], nodo.esfericas[1] + self.intervalo_angular, nodo.esfericas[2]])
+            esfericas.append([nodo.esfericas[0], nodo.esfericas[1] - self.intervalo_angular, nodo.esfericas[2]])
+            esfericas.append([nodo.esfericas[0], nodo.esfericas[1], nodo.esfericas[2] + self.intervalo_angular])
+            esfericas.append([nodo.esfericas[0], nodo.esfericas[1], nodo.esfericas[2] - self.intervalo_angular])
 
             for esferica in esfericas:
-                movimientos.append(esferico_a_cartesiano(esferica))
+                movimientos.append(esferico_a_cartesiano(esferica) * self.mag_curva)
 
 
-            movimientos.append(np.array(nodo.movimiento))
-            print("\n")
-            print(movimientos)
-            time.sleep(0.1)
+            movimientos.append(np.array(nodo.movimiento) * self.intervalo)
+
         return [tuple(np.array(nodo.posicion) + np.array(mov)) for mov in movimientos]
 
     def es_cercano_a_obstaculo(self, vecino_pos, obstaculos, size_region_sqrt3, tol_rad):    # Función para comprobar si un punto está cerca de un obstáculo dentro de una tolerancia
@@ -347,16 +350,19 @@ class Algoritmo:
                vector_final,
                tramo_recto_min,
                tramo_recto_min_corte,
-               intervalo_angular = 22.5):   # Algoritmo D* simplificado
+               intervalo_angular = 30,
+               radio_curvatura = 13):   # Algoritmo D* simplificado
 
         self.tramo_recto_min = tramo_recto_min
         self.intervalo = intervalo
         self.vector_inicio = vector_incio
         self.vector_final = vector_final
-        self.intervalo_angular = intervalo_angular
+        self.intervalo_angular = np.deg2rad(intervalo_angular)
 
         self.inicio = np.array(inicio) + np.array(self.vector_inicio)*self.tramo_recto_min
         self.final = np.array(final) + np.array(self.vector_final)* tramo_recto_min_corte
+        self.mag_curva = radio_curvatura * np.sin(2 * self.intervalo_angular) / np.cos(self.intervalo_angular)
+        print(f"Magnitud de curva: {self.mag_curva}")
 
         mapa = {}
         nodo_inicio = Nodo(posicion=self.inicio,
@@ -406,7 +412,7 @@ class Algoritmo:
                 return camino # Devuelve el camino en el orden correcto
 
             # Generar vecinos del nodo actual
-            for vecino_pos in self.generar_vecinos(nodo_actual, self.intervalo):
+            for vecino_pos in self.generar_vecinos(nodo_actual):
                 # Comprobar si el vecino está cerca de algún obstáculo (dentro de la tolerancia)
                 if self.es_cercano_a_obstaculo(vecino_pos, obstaculos, size_region_factor, tol_rad):
                     continue  # Saltar si está demasiado cerca de un obstáculo
@@ -416,7 +422,8 @@ class Algoritmo:
                 
                 if vecino_pos not in mapa:
                     #Calcula movimiento y diferencial de movimiento para el nuevo Nodo
-                    movimiento = (np.array(vecino_pos) - np.array(nodo_actual.posicion))
+                    movimiento = np.array(vecino_pos) - np.array(nodo_actual.posicion)
+                    movimiento = movimiento / np.linalg.norm(movimiento)
                     dif_mov = nodo_actual.movimiento - movimiento
 
                     #Crea los nuevos nodos vecinos

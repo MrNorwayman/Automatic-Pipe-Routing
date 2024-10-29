@@ -9,8 +9,9 @@ def main():
     size_region = 100
     num_puntos = 1000
     intervalo = 25
-    tramo_recto_minimo = 60
-    tramo_recto_min_corte = 30
+    tramo_recto_minimo = 10
+    tramo_recto_min_corte = 0
+    intervalo_angular = 30
 
     #Extraccion de datos del STP
     datos = Classes.buscar_y_extraer("C:/Users/GARCIAMA44/OneDrive - Carrier Corporation/Escritorio/TRABAJO/CODIGOS/TUBERIA/STP.stp")
@@ -22,7 +23,8 @@ def main():
                             intervalo=intervalo,
                             size_region=size_region,
                             tramo_recto_min=tramo_recto_minimo,
-                            tramo_recto_min_corte=tramo_recto_min_corte)
+                            tramo_recto_min_corte=tramo_recto_min_corte,
+                            intervalo_angular = intervalo_angular)
         Tuberias.append(Tubo)
 
     # Crear objeto STL y fragmentar
