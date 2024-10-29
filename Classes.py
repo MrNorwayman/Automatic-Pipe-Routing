@@ -5,7 +5,6 @@ import numpy as np
 import time
 import re
 import heapq
-import itertools
 
 '''
 -----------------------DEFINICION DE CLASES----------------------
@@ -69,17 +68,17 @@ class Tubo:
     
     def crear_tuberia(self):
         Al = Algoritmo()
-        camino = Al.d_star(self.inicio,
-                           self.final,
-                           self.tolerancia,
-                           self.radio,
-                           self.intervalo,
-                           self.obstaculos,
-                           self.size_region,
-                           self.vector_inicio,
-                           self.vector_final,
-                           self.tramo_recto_min,
-                           self.tramo_recto_min_corte)
+        camino = Al.d_star(inicio=self.inicio,
+                           final=self.final,
+                           tolerancia=self.tolerancia,
+                           radio=self.radio,
+                           intervalo=self.intervalo,
+                           obstaculos=self.obstaculos,
+                           size_region=self.size_region,
+                           vector_incio=self.vector_inicio,
+                           vector_final=self.vector_final,
+                           tramo_recto_min=self.tramo_recto_min,
+                           tramo_recto_min_corte=self.tramo_recto_min_corte)
         nube_puntos_tubo = np.empty((0, 3))
         for punto in camino:
             esfera = puntos_a_esfera(punto, self.radio, 10000)
@@ -256,8 +255,7 @@ class Nodo:
         self.angulo_curva = ang_curva
         self.largo_recta = lar_recta
         self.dif_mov = dif_mov
-        self.esfericas = cartesiano_a_esferico(movimiento)/np.linalg.norm(movimiento)
-
+        self.esfericas = cartesiano_a_esferico(movimiento)
         #Diferencial de movimiento, para saber si es una recta o una curva
         self.posicion = posicion
         self.posicion_padre = posicion_padre
@@ -269,7 +267,7 @@ class Nodo:
         
         else:
             #Es una recta
-            if np.any(np.abs(self.movimiento) > np.linalg.norm(movimiento)*0.999):
+            if np.all(dif_mov == [0, 0, 0]):
                 self.largo_recta += intervalo
                 self.angulo_curva = 0
                 self.g -= 0.5
@@ -277,13 +275,13 @@ class Nodo:
         
             else:
                 self.largo_recta = 0
-                self.angulo_curva +=22.5
-                self.g += 0.3
+                self.angulo_curva +=45
+                self.g += 1
 
     def __lt__(self, otro):
         return self.g < otro.g
 ############
-import test_2
+
 ### D STAR ###
 class Algoritmo:
     def __init__(self):
@@ -293,12 +291,11 @@ class Algoritmo:
     def heuristica(self, nodo1, nodo2):  # Heurística euclidiana en 3D
         return np.linalg.norm(np.array(nodo1) - np.array(nodo2))
 
-    def generar_vecinos(self, nodo, k, a):   # Genera los vecinos inmediatos en 3D (26 direcciones: ejes y diagonales)
-        movimientos = []
+    def generar_vecinos(self, nodo, k, a = np.deg2rad(45)):   # Genera los vecinos inmediatos en 3D (26 direcciones: ejes y diagonales)
 
-        #Seguir la recta puede continuar así, depende de la posicion de los Nodos y suma el vector movimiento 
+        movimientos = []
         if (nodo.largo_recta < self.tramo_recto_min) and (nodo.largo_recta > 0):    
-            movimientos.append(np.array(nodo.movimiento) * k)
+            movimientos.append(np.array(nodo.movimiento))
 
         #Generacion de vecinos cambiando los angulos polares
         else:
@@ -309,10 +306,13 @@ class Algoritmo:
             esfericas.append([nodo.esfericas[0], nodo.esfericas[1], nodo.esfericas[2] - a])
 
             for esferica in esfericas:
-                movimientos.append(esferico_a_cartesiano(esferica) * k)
+                movimientos.append(esferico_a_cartesiano(esferica))
 
-            movimientos.append(np.array(nodo.movimiento) * k)
 
+            movimientos.append(np.array(nodo.movimiento))
+            print("\n")
+            print(movimientos)
+            time.sleep(0.1)
         return [tuple(np.array(nodo.posicion) + np.array(mov)) for mov in movimientos]
 
     def es_cercano_a_obstaculo(self, vecino_pos, obstaculos, size_region_sqrt3, tol_rad):    # Función para comprobar si un punto está cerca de un obstáculo dentro de una tolerancia
@@ -382,11 +382,9 @@ class Algoritmo:
             # Imprimir información de la iteración actual
             if iteracion % 100 == 0:
                 print(f"\nIteración {iteracion}: Costo acumulado {nodo_actual.g}")
-                print(nodo_actual.movimiento)
-                print(nodo_actual.dif_mov)
 
             # Comprobar si estamos lo suficientemente cerca del objetivo (con tolerancia)
-            if np.linalg.norm(np.array(nodo_actual.posicion) - np.array(self.final)) < 1.8*intervalo:
+            if np.linalg.norm(np.array(nodo_actual.posicion) - np.array(self.final)) < 1.8*self.intervalo:
                 print(f"\n¡Objetivo alcanzado!\nFueron necesarias {iteracion} iteraciones\nCosto acumulado: {nodo_actual.g}")
                 camino = []
                 camino_nodos = []
@@ -408,7 +406,7 @@ class Algoritmo:
                 return camino # Devuelve el camino en el orden correcto
 
             # Generar vecinos del nodo actual
-            for vecino_pos in self.generar_vecinos(nodo_actual, self.intervalo, self.intervalo_angular):
+            for vecino_pos in self.generar_vecinos(nodo_actual, self.intervalo):
                 # Comprobar si el vecino está cerca de algún obstáculo (dentro de la tolerancia)
                 if self.es_cercano_a_obstaculo(vecino_pos, obstaculos, size_region_factor, tol_rad):
                     continue  # Saltar si está demasiado cerca de un obstáculo
@@ -430,9 +428,7 @@ class Algoritmo:
                                   dif_mov=dif_mov,
                                   ang_curva=nodo_actual.angulo_curva,
                                   lar_recta=nodo_actual.largo_recta,
-                                  posicion_padre=nodo_actual.posicion)
-                    
-                    
+                                  posicion_padre=nodo_actual.posicion)                    
                     
                     mapa[vecino_pos] = vecino
                     heapq.heappush(abierta, vecino)
@@ -459,22 +455,22 @@ class Algoritmo:
 '''
 ### INFORMACION STP ###
 def cartesiano_a_esferico(vector):
-        r = np.linalg.norm(vector)
-        vector = vector/r
-        theta = np.arctan2(vector[0], vector[2])
-        phi = np.arccos(vector[1])
-        return np.array([r, theta*180/np.pi, phi*180/np.pi])
+    r = np.linalg.norm(vector)
+    theta = np.arctan2(vector[1], vector[0])  # Ángulo acimutal
+    phi = np.arccos(vector[2] / r)            # Ángulo polar
+    return np.array([r, theta, phi])
 
 def esferico_a_cartesiano(vector):
     r = vector[0]
-    theta = np.deg2rad(vector[1])  # Convertir theta a radianes
-    phi = np.deg2rad(vector[2])    # Convertir phi a radianes
+    theta = vector[1]  # Theta en radianes
+    phi = vector[2]    # Phi en radianes
     
     x = r * np.sin(phi) * np.cos(theta)
-    y = r * np.cos(phi)
-    z = r * np.sin(phi) * np.sin(theta)
+    y = r * np.sin(phi) * np.sin(theta)
+    z = r * np.cos(phi)
     
     return np.array([x, y, z])
+
 
 def buscar_y_extraer(archivo):
     with open(archivo, "r") as file:

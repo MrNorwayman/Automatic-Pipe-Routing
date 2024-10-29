@@ -18,9 +18,9 @@ def main():
     #Creacion de objeto de tuberia
     Tuberias = []
     for dato in datos:
-        Tubo = Classes.Tubo(dato,
-                            intervalo,
-                            size_region,
+        Tubo = Classes.Tubo(datos=dato,
+                            intervalo=intervalo,
+                            size_region=size_region,
                             tramo_recto_min=tramo_recto_minimo,
                             tramo_recto_min_corte=tramo_recto_min_corte)
         Tuberias.append(Tubo)
