@@ -11,6 +11,14 @@ import heapq
 '''
 ### TUBERIA ###
 class Tubo:
+    '''Inicializar objeto TUBO.
+        Datos entrada:  datos -> Datos de la tuberia extraidos del STP
+                        intervalo -> Distancia entre nodo y nodo
+                        size_region -> Tamaño de las divisiones de puntos del STL
+                        tramo_recto_min -> Tramo recto minimo establecido por el tubo
+                        tramo_recto_min_corte -> Tramo recto minimo posterior al corte de extremo
+
+        Retorno:        None '''
     def __init__(self, datos, intervalo, size_region, tramo_recto_min = 70, tramo_recto_min_corte = 40, intervalo_angular = 30):  #Inicializa el tubo
 
         self.tramo_recto_min = tramo_recto_min
@@ -23,18 +31,28 @@ class Tubo:
         self.analizar_datos(datos)
         return None
 
+
+    '''Añadir punto a el tubo
+        Datos entrada:  punto_nuevo -> Nuevo punto para añadir
+
+        Retorno:        Numpy array de puntos                                                                      '''
     def add_punto(self, punto_nuevo):   #Inserta un punto
         self.puntos = np.append(self.puntos, punto_nuevo)
         return self.puntos
     
+
+    '''Analiza los datos y los añade a variables del objeto
+    Datos entrada:  dato -> Datos extraidos del STP
+
+    Retorno:        None                                                                      '''
     def analizar_datos(self, dato):
 
-        if dato[0].split("_")[1] == "138":
+        if dato[0].split("_")[1] == "18":
             radio = 28.57/2
             self.radio_curva = 57
         else:
             radio = 12.7/2
-            self.radio_curva = 31
+            self.radio_curva = 10
 
         tolerancia = dato[0].split("_")[2]
         inicio = dato[1]
@@ -90,9 +108,6 @@ class Tubo:
             nube_puntos_tubo = np.vstack((nube_puntos_tubo, esfera))
         
         return nube_puntos_tubo
-
-    def calcular(self, obstaculos, size_region):
-      return None
 ###############
 
 ### STL ###
@@ -125,6 +140,13 @@ class STL:
             quit()
             return None
         
+    def add_tubo(self, nube_tubo):
+        np.append(self.stl_points, nube_tubo)
+        self.encontrar_max_y_min()
+        self.crear_regiones_np()
+
+        return self.fragmentos
+
     def convertir_a_puntos(self):   #Convierte el STL en nube de puntos y en array
         try:
             mesh_stl = o3d.io.read_triangle_mesh(self.archivo_stl)  #Abrir STL
@@ -247,6 +269,7 @@ class Nodo:
     def __init__(self,
                  posicion,
                  intervalo,
+                 intervalo_angular,
                  movimiento=None,
                  g=float('inf'),
                  padre=None,
@@ -275,13 +298,13 @@ class Nodo:
             if np.all(dif_mov == [0, 0, 0]):
                 self.largo_recta += intervalo
                 self.angulo_curva = 0
-                self.g -= 0.5
+                self.g = self.g*0.9
                 return
         
             else:
                 self.largo_recta = 0
-                self.angulo_curva +=45
-                self.g += 1
+                self.angulo_curva += intervalo_angular
+                self.g = self.g * 1.1
 
     def __lt__(self, otro):
         return self.g < otro.g
@@ -367,6 +390,7 @@ class Algoritmo:
         mapa = {}
         nodo_inicio = Nodo(posicion=self.inicio,
                            intervalo=self.intervalo,
+                           intervalo_angular=intervalo_angular,
                            movimiento=self.vector_inicio,
                            g=0,
                            lar_recta=self.tramo_recto_min,
@@ -418,7 +442,7 @@ class Algoritmo:
                     continue  # Saltar si está demasiado cerca de un obstáculo
 
                 #Calcula la nueva heuristica
-                nuevo_g = nodo_actual.g + self.heuristica(nodo_actual.posicion, vecino_pos)
+                nuevo_g = np.linalg.norm(np.array(vecino_pos) - np.array(self.final))
                 
                 if vecino_pos not in mapa:
                     #Calcula movimiento y diferencial de movimiento para el nuevo Nodo
@@ -429,6 +453,7 @@ class Algoritmo:
                     #Crea los nuevos nodos vecinos
                     vecino = Nodo(posicion=vecino_pos,
                                   intervalo=self.intervalo,
+                                  intervalo_angular=intervalo_angular,
                                   movimiento=movimiento,
                                   g=nuevo_g,
                                   padre=nodo_actual,
