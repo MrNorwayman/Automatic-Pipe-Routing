@@ -46,13 +46,13 @@ class Tubo:
 
     Retorno:        None                                                                      '''
     def analizar_datos(self, dato):
-
-        if dato[0].split("_")[1] == "18":
-            radio = 28.57/2
-            self.radio_curva = 57
-        else:
-            radio = 28.57/2
-            self.radio_curva = 10
+        match dato[0].split("_")[1]:
+            case "18":
+                radio = 28.57/2
+                self.radio_curva = 57
+            case _:
+                radio = 12.7/2
+                self.radio_curva = 30
 
         tolerancia = dato[0].split("_")[2]
         inicio = dato[1]
@@ -275,6 +275,7 @@ class Nodo:
                  f=float('inf'),
                  padre=None,
                  dif_mov=None,
+                 esfericas_padre = None,
                  ang_curva = 0,
                  lar_recta = 0,
                  posicion_padre = None):
@@ -285,6 +286,7 @@ class Nodo:
         self.angulo_curva = ang_curva
         self.largo_recta = lar_recta
         self.dif_mov = dif_mov
+        self.esfericas_padre = esfericas_padre
         self.esfericas = cartesiano_a_esferico(movimiento)
         #Diferencial de movimiento, para saber si es una recta o una curva
         self.posicion = posicion
@@ -321,27 +323,45 @@ class Algoritmo:
     def heuristica(self, nodo1, nodo2):  # Heurística euclidiana en 3D
         return np.linalg.norm(np.array(nodo1) - np.array(nodo2))
 
+
+
     def generar_vecinos(self, nodo):   # Genera los vecinos inmediatos en 3D (26 direcciones: ejes y diagonales)
 
+        #Seguir recto
         movimientos = []
-        if ((nodo.largo_recta < self.tramo_recto_min) and (nodo.largo_recta > 0)):    
+        if ((nodo.largo_recta < self.tramo_recto_min) and (nodo.largo_recta > 0)) or (nodo.angulo_curva >= self.angulo_max):    
             movimientos.append(np.array(nodo.movimiento) * self.intervalo)
 
         #Generacion de vecinos cambiando los angulos polares
-        else:
+        elif (nodo.largo_recta >= self.tramo_recto_min):
             esfericas = []
-            esfericas.append([nodo.esfericas[0], nodo.esfericas[1] + self.intervalo_angular, nodo.esfericas[2]])
-            esfericas.append([nodo.esfericas[0], nodo.esfericas[1] - self.intervalo_angular, nodo.esfericas[2]])
-            esfericas.append([nodo.esfericas[0], nodo.esfericas[1], nodo.esfericas[2] + self.intervalo_angular])
-            esfericas.append([nodo.esfericas[0], nodo.esfericas[1], nodo.esfericas[2] - self.intervalo_angular])
+            movimientos.append(np.array(nodo.movimiento) * self.intervalo)
+            theta = np.linspace(0, 2 * np.pi, 2*int(np.pi/self.intervalo_angular) - 1)
+            for iter in theta:
+                x = self.intervalo_angular * np.cos(iter)
+                y = self.intervalo_angular * np.sin(iter)
+
+                esfericas.append([nodo.esfericas[0], nodo.esfericas[1] + x, nodo.esfericas[2] + y])
 
             for esferica in esfericas:
                 movimientos.append(esferico_a_cartesiano(esferica) * self.mag_curva)
 
+        #Seguir curva        
+        else:
+            dif_curva = []
+            dif_curva = np.array(nodo.esfericas) - np.array(nodo.esfericas_padre)
 
-            movimientos.append(np.array(nodo.movimiento) * self.intervalo)
+            esfericas = []
+            esfericas.append(nodo.esfericas + dif_curva)
+
+            for esferica in esfericas:
+                movimientos.append(esferico_a_cartesiano(esferica) * self.mag_curva)
+
+           
 
         return [tuple(np.array(nodo.posicion) + np.array(mov)) for mov in movimientos]
+
+
 
     def es_cercano_a_obstaculo(self, vecino_pos, obstaculos, size_region_sqrt3, tol_rad):    # Función para comprobar si un punto está cerca de un obstáculo dentro de una tolerancia
         for region in obstaculos:
@@ -397,6 +417,7 @@ class Algoritmo:
                            g=0,
                            f=0,
                            lar_recta=self.tramo_recto_min,
+                           esfericas_padre=cartesiano_a_esferico(self.vector_inicio),
                            ang_curva=0)
         
         mapa[tuple(inicio)] = nodo_inicio
@@ -414,7 +435,8 @@ class Algoritmo:
 
             # Imprimir información de la iteración actual
             if iteracion % 100 == 0:
-                print(f"\nIteración {iteracion}: Costo acumulado {nodo_actual.g}")
+                distancia_al_centro = np.linalg.norm(np.array(nodo_actual.posicion) - np.array(self.final))
+                print(f"\nIteración {iteracion}: Costo acumulado {nodo_actual.g}, distancia al final: {distancia_al_centro}")
 
             # Comprobar si estamos lo suficientemente cerca del objetivo (con tolerancia)
             if np.linalg.norm(np.array(nodo_actual.posicion) - np.array(self.final)) < 1.8*self.intervalo:
@@ -463,6 +485,7 @@ class Algoritmo:
                                   f=nuevo_f,
                                   padre=nodo_actual,
                                   dif_mov=dif_mov,
+                                  esfericas_padre=nodo_actual.esfericas,
                                   ang_curva=nodo_actual.angulo_curva,
                                   lar_recta=nodo_actual.largo_recta,
                                   posicion_padre=nodo_actual.posicion)                    

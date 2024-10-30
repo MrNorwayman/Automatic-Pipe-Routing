@@ -7,11 +7,11 @@ def main():
 
     #Costo aproximado de 380
     size_region = 100
-    num_puntos = 10000
+    num_puntos = 100
     intervalo = 10
-    intervalo_angular = 90/6
-    tramo_recto_minimo = 40
-    tramo_recto_min_corte = 10
+    intervalo_angular = 90/30
+    tramo_recto_minimo = 50
+    tramo_recto_min_corte = 63
     
 
     #Extraccion de datos del STP
