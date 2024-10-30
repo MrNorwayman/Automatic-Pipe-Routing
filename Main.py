@@ -8,7 +8,7 @@ def main():
     #Costo aproximado de 380
     size_region = 100
     num_puntos = 1000000
-    intervalo = 2
+    intervalo = 5
     tramo_recto_minimo = 50
     tramo_recto_min_corte = 10
 
@@ -27,11 +27,8 @@ def main():
 
     # Crear objeto STL y fragmentar
     Maquina = Classes.STL("C:/Users/GARCIAMA44/OneDrive - Carrier Corporation/Escritorio/TRABAJO/CODIGOS/TUBERIA/STL.stl")
-    obstaculos = Maquina.fragmentacion(num_puntos, size_region)
     #Maquina.previsualizacion_puntos()
-
-    Tuberias[0].actualizar_obstaculos(obstaculos)
-
+    
     # Crear visualizador
     Visualizador = Classes.Nube_de_Puntos()
     Visualizador.add_stl(Maquina.archivo_stl)
@@ -41,9 +38,21 @@ def main():
     # Definir puntos de inicio y final
 
     #Crear tuberia
+    flag_tubo = False
+
     for index, tubo in enumerate(Tuberias):
-        nube_puntos_tubo =tubo.crear_tuberia()
-        Visualizador.add_punto(nube_puntos_tubo, [0, 1, index])
+        if flag_tubo == False:
+            flag_tubo = True
+            obstaculos = Maquina.fragmentacion(num_puntos, size_region)
+            Maquina.previsualizacion_puntos()
+        else:
+            obstaculos = Maquina.add_tubo(nube_puntos_tubo)
+        
+        tubo.actualizar_obstaculos(obstaculos)
+        nube_puntos_tubo = tubo.crear_tuberia()
+        Visualizador.add_punto(nube_puntos_tubo, np.random.rand(3).tolist())
+        
+
 
 if __name__ == "__main__":
 

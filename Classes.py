@@ -140,6 +140,14 @@ class STL:
             quit()
             return None
         
+    def add_tubo(self, nube_tubo):
+        np.append(self.stl_points, nube_tubo)
+        self.encontrar_max_y_min()
+        self.crear_regiones_np()
+
+        return self.fragmentos
+
+
     def convertir_a_puntos(self):   #Convierte el STL en nube de puntos y en array
         try:
             mesh_stl = o3d.io.read_triangle_mesh(self.archivo_stl)  #Abrir STL
@@ -300,7 +308,7 @@ class Nodo:
             else:
                 self.largo_recta = 0
                 self.angulo_curva += angulo
-                self.g += 5
+                self.g = self.g*1.2
 
             return
 
