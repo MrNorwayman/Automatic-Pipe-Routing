@@ -8,9 +8,9 @@ def main():
     #Costo aproximado de 380
     size_region = 100
     num_puntos = 1000000
-    intervalo = 0.5
-    tramo_recto_minimo = 60
-    tramo_recto_min_corte = 30
+    intervalo = 2
+    tramo_recto_minimo = 50
+    tramo_recto_min_corte = 10
 
     #Extraccion de datos del STP
     datos = Classes.buscar_y_extraer("C:/Users/GARCIAMA44/OneDrive - Carrier Corporation/Escritorio/TRABAJO/CODIGOS/TUBERIA/STP.stp")
@@ -28,7 +28,7 @@ def main():
     # Crear objeto STL y fragmentar
     Maquina = Classes.STL("C:/Users/GARCIAMA44/OneDrive - Carrier Corporation/Escritorio/TRABAJO/CODIGOS/TUBERIA/STL.stl")
     obstaculos = Maquina.fragmentacion(num_puntos, size_region)
-    Maquina.previsualizacion_puntos()
+    #Maquina.previsualizacion_puntos()
 
     Tuberias[0].actualizar_obstaculos(obstaculos)
 

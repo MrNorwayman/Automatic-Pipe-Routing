@@ -300,7 +300,7 @@ class Nodo:
             else:
                 self.largo_recta = 0
                 self.angulo_curva += angulo
-                self.g += 0.5
+                self.g += 5
 
             return
 
@@ -445,6 +445,7 @@ class Algoritmo:
                     
                     mapa[vecino_pos] = vecino
                     heapq.heappush(abierta, vecino)
+
                 else:
                     vecino = mapa[vecino_pos]
                     if nuevo_g < vecino.g:
