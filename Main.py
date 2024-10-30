@@ -9,8 +9,8 @@ def main():
     size_region = 100
     num_puntos = 10000
     intervalo = 10
-    intervalo_angular = 30
-    tramo_recto_minimo = 0
+    intervalo_angular = 90/6
+    tramo_recto_minimo = 40
     tramo_recto_min_corte = 10
     
 

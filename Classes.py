@@ -47,11 +47,11 @@ class Tubo:
     Retorno:        None                                                                      '''
     def analizar_datos(self, dato):
 
-        if dato[0].split("_")[1] == "138":
+        if dato[0].split("_")[1] == "18":
             radio = 28.57/2
             self.radio_curva = 57
         else:
-            radio = 12.7/2
+            radio = 28.57/2
             self.radio_curva = 10
 
         tolerancia = dato[0].split("_")[2]
