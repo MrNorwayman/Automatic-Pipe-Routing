@@ -7,7 +7,7 @@ def main():
 
     #Costo aproximado de 380
     size_region = 100
-    num_puntos = 1000000
+    num_puntos = 50000
     intervalo = 5
     tramo_recto_minimo = 50
     tramo_recto_min_corte = 10
@@ -40,11 +40,11 @@ def main():
     #Crear tuberia
     flag_tubo = False
 
-    for index, tubo in enumerate(Tuberias):
+    for tubo in Tuberias:
         if flag_tubo == False:
             flag_tubo = True
             obstaculos = Maquina.fragmentacion(num_puntos, size_region)
-            Maquina.previsualizacion_puntos()
+            #Maquina.previsualizacion_puntos()
         else:
             obstaculos = Maquina.add_tubo(nube_puntos_tubo)
         

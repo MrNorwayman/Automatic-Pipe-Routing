@@ -273,6 +273,7 @@ class Nodo:
                  angulo,
                  movimiento=None,
                  g=float('inf'),
+                 f=float('inf'),
                  padre=None,
                  dif_mov=None,
                  ang_curva = 0,
@@ -280,6 +281,7 @@ class Nodo:
                  posicion_padre = None):
         
         self.g = g  # Costo acumulado desde el nodo inicial
+        self.f = f
         self.movimiento = movimiento
         self.angulo_curva = ang_curva
         self.largo_recta = lar_recta
@@ -383,6 +385,7 @@ class Algoritmo:
                            angulo=self.intervalo_angular,
                            movimiento=self.vector_inicio,
                            g=0,
+                           f=0,
                            lar_recta=self.tramo_recto_min,
                            ang_curva=0)
         
@@ -432,6 +435,7 @@ class Algoritmo:
                     continue  # Saltar si está demasiado cerca de un obstáculo
 
                 #Calcula la nueva heuristica
+                nuevo_f = nodo_actual.f + np.linalg.norm(np.array(vecino_pos) - np.array(nodo_actual.posicion))
                 nuevo_g = np.linalg.norm(np.array(vecino_pos) - np.array(self.final))
                 
                 if vecino_pos not in mapa:
@@ -445,6 +449,7 @@ class Algoritmo:
                                   self.intervalo_angular,
                                   movimiento=movimiento,
                                   g=nuevo_g,
+                                  f=nuevo_f,
                                   padre=nodo_actual,
                                   dif_mov=dif_mov,
                                   ang_curva=nodo_actual.angulo_curva,
