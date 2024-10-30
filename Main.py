@@ -8,14 +8,14 @@ def main():
     #Costo aproximado de 380
     size_region = 100
     num_puntos = 10000
-    intervalo = 5
-    intervalo_angular = 10
-    tramo_recto_minimo = 10
+    intervalo = 10
+    intervalo_angular = 30
+    tramo_recto_minimo = 0
     tramo_recto_min_corte = 10
     
 
     #Extraccion de datos del STP
-    datos = Classes.buscar_y_extraer("C:/Users/GARCIAMA44/OneDrive - Carrier Corporation/Escritorio/TRABAJO/CODIGOS/TUBERIA/STP.stp")
+    datos = Classes.buscar_y_extraer("STP.stp")
 
     #Creacion de objeto de tuberia
     Tuberias = []
@@ -46,7 +46,7 @@ def main():
         if flag_tubo == False:
             flag_tubo = True
             obstaculos = Maquina.fragmentacion(num_puntos, size_region)
-            Maquina.previsualizacion_puntos()
+            #Maquina.previsualizacion_puntos()
         else:
             obstaculos = Maquina.add_tubo(nube_puntos_tubo)
         

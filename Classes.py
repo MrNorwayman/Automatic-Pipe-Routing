@@ -47,7 +47,7 @@ class Tubo:
     Retorno:        None                                                                      '''
     def analizar_datos(self, dato):
 
-        if dato[0].split("_")[1] == "18":
+        if dato[0].split("_")[1] == "138":
             radio = 28.57/2
             self.radio_curva = 57
         else:
@@ -272,6 +272,7 @@ class Nodo:
                  intervalo_angular,
                  movimiento=None,
                  g=float('inf'),
+                 f=float('inf'),
                  padre=None,
                  dif_mov=None,
                  ang_curva = 0,
@@ -279,6 +280,7 @@ class Nodo:
                  posicion_padre = None):
         
         self.g = g  # Costo acumulado desde el nodo inicial
+        self.f = f
         self.movimiento = movimiento
         self.angulo_curva = ang_curva
         self.largo_recta = lar_recta
@@ -304,7 +306,7 @@ class Nodo:
             else:
                 self.largo_recta = 0
                 self.angulo_curva += intervalo_angular
-                self.g = self.g * 1.1
+                self.g = self.g *1
 
     def __lt__(self, otro):
         return self.g < otro.g
@@ -322,7 +324,7 @@ class Algoritmo:
     def generar_vecinos(self, nodo):   # Genera los vecinos inmediatos en 3D (26 direcciones: ejes y diagonales)
 
         movimientos = []
-        if ((nodo.largo_recta < self.tramo_recto_min) and (nodo.largo_recta > 0) or (nodo.angulo_curva > self.angulo_max)):    
+        if ((nodo.largo_recta < self.tramo_recto_min) and (nodo.largo_recta > 0)):    
             movimientos.append(np.array(nodo.movimiento) * self.intervalo)
 
         #Generacion de vecinos cambiando los angulos polares
@@ -384,7 +386,7 @@ class Algoritmo:
 
         self.inicio = np.array(inicio) + np.array(self.vector_inicio)*self.tramo_recto_min
         self.final = np.array(final) + np.array(self.vector_final)* tramo_recto_min_corte
-        self.mag_curva = radio_curvatura * np.sin(2 * self.intervalo_angular) / np.cos(self.intervalo_angular)
+        self.mag_curva = 2 * radio_curvatura * np.sin(self.intervalo_angular)
         print(f"Magnitud de curva: {self.mag_curva}")
 
         mapa = {}
@@ -393,6 +395,7 @@ class Algoritmo:
                            intervalo_angular=intervalo_angular,
                            movimiento=self.vector_inicio,
                            g=0,
+                           f=0,
                            lar_recta=self.tramo_recto_min,
                            ang_curva=0)
         
@@ -442,7 +445,8 @@ class Algoritmo:
                     continue  # Saltar si está demasiado cerca de un obstáculo
 
                 #Calcula la nueva heuristica
-                nuevo_g = np.linalg.norm(np.array(vecino_pos) - np.array(self.final))
+                nuevo_f = nodo_actual.f + self.heuristica(nodo_actual.posicion, vecino_pos)
+                nuevo_g = np.linalg.norm(np.array(vecino_pos) - np.array(self.final)) + nuevo_f*0.99
                 
                 if vecino_pos not in mapa:
                     #Calcula movimiento y diferencial de movimiento para el nuevo Nodo
@@ -456,6 +460,7 @@ class Algoritmo:
                                   intervalo_angular=intervalo_angular,
                                   movimiento=movimiento,
                                   g=nuevo_g,
+                                  f=nuevo_f,
                                   padre=nodo_actual,
                                   dif_mov=dif_mov,
                                   ang_curva=nodo_actual.angulo_curva,
