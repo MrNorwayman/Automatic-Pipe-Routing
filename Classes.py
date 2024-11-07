@@ -101,7 +101,7 @@ class Tubo:
                            self.tramo_recto_min_corte)
         nube_puntos_tubo = np.empty((0, 3))
         for punto in camino:
-            esfera = puntos_a_esfera(punto, self.radio, 10000)
+            esfera = puntos_a_esfera(punto, self.radio, 1000)
             nube_puntos_tubo = np.vstack((nube_puntos_tubo, esfera))
         
         return nube_puntos_tubo
@@ -141,7 +141,9 @@ class STL:
             return None
         
     def add_tubo(self, nube_tubo):
-        np.append(self.stl_points, nube_tubo)
+        print(nube_tubo)
+        print(self.stl_points)
+        self.stl_points = np.concatenate((self.stl_points, nube_tubo), axis=0)
         self.encontrar_max_y_min()
         self.crear_regiones_np()
 

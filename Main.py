@@ -47,6 +47,7 @@ def main():
             #Maquina.previsualizacion_puntos()
         else:
             obstaculos = Maquina.add_tubo(nube_puntos_tubo)
+            Maquina.previsualizacion_puntos()
         
         tubo.actualizar_obstaculos(obstaculos)
         nube_puntos_tubo = tubo.crear_tuberia()
