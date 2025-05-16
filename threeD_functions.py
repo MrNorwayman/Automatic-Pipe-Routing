@@ -1,6 +1,6 @@
 import numpy as np, itertools, matplotlib.pyplot as plt
 from queue import PriorityQueue
-from twoD_Nodo import Nodo
+from threeD_Nodo import Nodo
 
 
 def delta_star(Nodo_inicio,
@@ -108,25 +108,30 @@ def generar_vecinos(Nodo,
     <- posiciones: Lista de posiciones de los nuevos nodos
     <- angulos: Lista de angulos de los nuevos nodos
     ##########################################################'''
-    if (0 < Nodo.longitud_recta < recta_minima) or (Nodo.angulo_curva > curva_maxima - intervalo_angular * 0.5):
-        angulos = [Nodo.movimiento]
-    elif 0 < Nodo.angulo_curva < curva_maxima:
-        angulos = [Nodo.movimiento, 2 * Nodo.movimiento - Nodo.movimiento_padre]
-    else:
-        angulos = [
-            Nodo.movimiento,
-            Nodo.movimiento + intervalo_angular,
-            Nodo.movimiento - intervalo_angular,
-        ]
-
     posiciones = []
-    # Para el primer ángulo usar intervalo_lineal, para el resto intervalo_arco_curva
-    for i, angulo in enumerate(angulos):
-        distancia = intervalo_lineal if i == 0 else intervalo_arco_curva
-        desplazamiento = distancia * np.array([np.cos(angulo), np.sin(angulo)])
-        nueva_pos = Nodo.posicion + desplazamiento
-        posiciones.append(nueva_pos)
+    
+    # Seguir recto
+    if ((Nodo.longitud_recta < recta_minima) and (Nodo.longitud_recta > 0)) or (Nodo.angulo_curva > curva_maxima - intervalo_angular*0.5):
+        angulos = [Nodo.movimiento]
+    # Seguir curva o empezar recta
+    elif (Nodo.angulo_curva > 0) and (Nodo.angulo_curva < curva_maxima):
+        angulos = [Nodo.movimiento]
+        angulos.append(2*Nodo.movimiento - Nodo.movimiento_padre)
+    # Seguir recto o empezar curva
+    else: 
+        angulos = [Nodo.movimiento]
+        angulos.append(Nodo.movimiento + intervalo_angular)
+        angulos.append(Nodo.movimiento - intervalo_angular)
 
+    flag = 0
+    for angulo in angulos:
+        if flag == 0:
+            nueva_pos = Nodo.posicion + intervalo_lineal * np.array([np.cos(angulo), np.sin(angulo)])
+            posiciones.append(nueva_pos)
+            flag = 1
+        else:
+            nueva_pos = Nodo.posicion + (intervalo_arco_curva) * np.array([np.cos(angulo), np.sin(angulo)])
+            posiciones.append(nueva_pos)
     return posiciones, angulos
 
 
@@ -139,12 +144,10 @@ def reconstruir_camino(nodo):
     <- camino: Lista de posiciones del camino
     ##########################################################'''
     camino = []
-    current = nodo
-    while current is not None:
-        camino.append(current.posicion.tolist())
-        current = current.padre
-    camino.reverse()
-    return camino
+    while nodo:
+        camino.append(nodo.posicion.tolist())
+        nodo = nodo.padre
+    return camino[::-1]
 
 
 def heuristica(posicion, objetivo, angulo_curva):    
@@ -157,19 +160,14 @@ def heuristica(posicion, objetivo, angulo_curva):
     Variables de salida:
     <- return: Distancia al objetivo
     ##########################################################'''
-    posicion = np.asarray(posicion)
-    objetivo = np.asarray(objetivo)
-    distancia = np.linalg.norm(posicion - objetivo)
-
     if angulo_curva > 0:
         if angulo_curva == np.deg2rad(90):
-            factor = 1
+            prioridad = 1*np.linalg.norm(np.array(posicion) - np.array(objetivo))
         else:
-            factor = 1
-    else:
-        factor = 1
+            prioridad = 1*np.linalg.norm(np.array(posicion) - np.array(objetivo))
 
-    return factor * distancia
+    prioridad = 1*np.linalg.norm(np.array(posicion) - np.array(objetivo))
+    return prioridad
 
 
 def cerca_de_obstaculos(posicion, obstaculos, distancia_a_obstaculo):
@@ -182,8 +180,9 @@ def cerca_de_obstaculos(posicion, obstaculos, distancia_a_obstaculo):
     Variables de salida:
     <- return: True si el nodo esta cerca de un obstaculo
     ##########################################################'''
-    posicion = np.asarray(posicion)  # Convertir solo una vez
-    return any(
-        np.linalg.norm(posicion - np.asarray(obstaculo)) < distancia_a_obstaculo
-        for obstaculo in obstaculos
-    )
+    for obstaculo in obstaculos:
+        distancia = np.linalg.norm(np.array(posicion) - np.array(obstaculo))
+        if distancia < distancia_a_obstaculo:
+            return True
+            
+    return False

@@ -2,17 +2,7 @@
 
 #Se va a partir de dos vectores. Se van a graficar todos los puntos usados, tanto los definitivos como todas las demas opciones usadas. Se van a implementar algunos obstaculos para el control de colisiones.
 
-# 20.98 segundos - Estandar
-# 21.36 segundos - Cambio estructura nodo -> Nodo -1.2%
-# 19.86 segundos - Cambio calculo colisiones -> Colisiones +5.6%
-# 18.98 segundos - Cambio calculo colisiones y distancia -> Distancia +4.6%
-# 19.98 segundos - Cambio calculo colisiones y distancia y reconstruccion del camino -> Reconstruccion camino -4.6%
-# 19.00 segundos - Cambio calculo colisiones y distancia y creacion de vecinos -> Creacion vecinos +0.0%
-# 25.90 segundos - Cambio calculo colisiones y distancia y algoritmo delta -> Heuristica -36.0%
-
-# TIEMPO FINAL OPTIMIZADO -> 17.91 segundos (mejor marca, variacion de 2 segundos entre pruebas)
-
-import twoD_functions, twoD_functions, numpy as np, matplotlib.pyplot as plt, time
+import threeD_functions, threeD_functions, numpy as np, matplotlib.pyplot as plt, time
 
 start_time = time.time()
 
@@ -25,8 +15,8 @@ curva_maxima = np.deg2rad(180)
 inicio = np.array([0.0, 0.0])
 objetivo = np.array([-25.0, 20.0])
 
-Nodo_inicio = twoD_functions.Nodo(inicio, 00, 0, 0.001, 0, 0, 0)
-Nodo_objetivo = twoD_functions.Nodo(objetivo, 0, 0, 1, 0, 0, 0)
+Nodo_inicio = threeD_functions.Nodo(inicio, 00, 0, 0.001, 0, 0, 0)
+Nodo_objetivo = threeD_functions.Nodo(objetivo, 0, 0, 1, 0, 0, 0)
 
 distancia_a_obstaculo = 10
 obstaculos = [np.array([0, 20]),
@@ -38,7 +28,7 @@ obstaculos = [np.array([0, 20]),
               np.array([10, -20]),
               np.array([55, 10])]
 
-camino, explorados = twoD_functions.delta_star( Nodo_inicio,
+camino, explorados = threeD_functions.delta_star( Nodo_inicio,
                                     Nodo_objetivo,
                                     obstaculos,
                                     distancia_a_obstaculo,
