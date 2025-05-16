@@ -7,13 +7,13 @@ def main():
 
     #Costo aproximado de 380
     size_region = 100
-    num_puntos = 50000
-    intervalo = 5
-    tramo_recto_minimo = 50
-    tramo_recto_min_corte = 10
+    num_puntos = 500
+    intervalo = 0.5
+    tramo_recto_minimo = 10
+    tramo_recto_min_corte = 2
 
     #Extraccion de datos del STP
-    datos = Classes.buscar_y_extraer("C:/Users/GARCIAMA44/OneDrive - Carrier Corporation/Escritorio/TRABAJO/CODIGOS/TUBERIA/STP.stp")
+    datos = Classes.buscar_y_extraer("a016495.stp")
 
     #Creacion de objeto de tuberia
     Tuberias = []
@@ -26,7 +26,7 @@ def main():
         Tuberias.append(Tubo)
 
     # Crear objeto STL y fragmentar
-    Maquina = Classes.STL("C:/Users/GARCIAMA44/OneDrive - Carrier Corporation/Escritorio/TRABAJO/CODIGOS/TUBERIA/STL.stl")
+    Maquina = Classes.STL("a016495.stl")
     #Maquina.previsualizacion_puntos()
     
     # Crear visualizador
