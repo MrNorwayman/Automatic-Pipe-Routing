@@ -14,18 +14,19 @@
 
 import twoD_functions, twoD_functions, numpy as np, matplotlib.pyplot as plt, time
 
+print("Algoritmo Delta-Star para busqueda de caminos en 2D")
 start_time = time.time()
 
 intervalo_lineal = 5
 recta_minima = 25
 radio_curvatura = 10
-intervalo_angular = np.deg2rad(0.1)
-curva_maxima = np.deg2rad(180)
+intervalo_angular = np.deg2rad(1)
+curva_maxima = np.deg2rad(45)
 
 inicio = np.array([0.0, 0.0])
-objetivo = np.array([-25.0, 20.0])
+objetivo = np.array([-26.0, -25.0])
 
-Nodo_inicio = twoD_functions.Nodo(inicio, 00, 0, 0.001, 0, 0, 0)
+Nodo_inicio = twoD_functions.Nodo(inicio, 0, 0, 0.001, 0, 0, 0)
 Nodo_objetivo = twoD_functions.Nodo(objetivo, 0, 0, 1, 0, 0, 0)
 
 distancia_a_obstaculo = 10
@@ -35,7 +36,6 @@ obstaculos = [np.array([0, 20]),
               np.array([40, 10]),
               np.array([45, 10]),
               np.array([50, 10]),
-              np.array([10, -20]),
               np.array([55, 10])]
 
 camino, explorados = twoD_functions.delta_star( Nodo_inicio,
@@ -50,6 +50,7 @@ camino, explorados = twoD_functions.delta_star( Nodo_inicio,
 
 print(f"Tiempo total de ejecución: {(time.time() - start_time):.2f} segundos")
 
+print(len(explorados))
 camino_np = np.array(camino)
 explorados_np= np.array(list(explorados))
 plt.figure()
