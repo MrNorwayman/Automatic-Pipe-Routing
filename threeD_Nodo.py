@@ -16,28 +16,24 @@ class Nodo:
     # CAMBIO 3D -> Se añade variable extra para angulo phi
     def __init__(self,
                  posicion,
-                 theta,
-                 phi,
-                 theta_padre,
-                 phi_padre,
+                 vector,
+                 vector_padre,
                  longitud_recta,
                  angulo_curva,
                  costo,
                  heuristica=0,
                  padre=None):
         # Variables del movimiento
-        self.posicion = posicion
-        self.theta = theta
-        self.phi = phi
-        self.theta_padre = theta_padre
-        self.phi_padre = phi_padre
-        self.longitud_recta = longitud_recta
-        self.angulo_curva = angulo_curva
-        self.heuristica = heuristica
-        self.padre = padre
+        self.posicion = posicion    # Posicion del nodo
+        self.vector = vector  # Vector de dirección del movimiento
+        self.vector_padre = vector_padre    # Vector de dirección del movimiento del nodo padre
+        self.longitud_recta = longitud_recta    # Valor acumulado de la recta
+        self.angulo_curva = angulo_curva    # Valor acumulado del angulo de curva
+        self.heuristica = heuristica    # Heuristica
+        self.padre = padre  # Nodo padre asociado a este nodo
 
         # Variables de coste
         self.costo = costo
 
     def f(self):
-        return 1 * self.costo + 1 * self.heuristica
+        return 500000 * self.costo + 1 * self.heuristica

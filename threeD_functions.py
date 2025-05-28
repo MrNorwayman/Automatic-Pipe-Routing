@@ -32,7 +32,7 @@ def delta_star(Nodo_inicio,
     # Cuanta menor f(), mayor prioridad
     cerrados = set()    #Conjunto de nodos cerrados
 
-    objetivo = Nodo_objetivo.posicion   #Posicion del objetivo
+    pos_objetivo = Nodo_objetivo.posicion   #Posicion del objetivo
     intervalo_arco_curva = radio_curvatura / 2 * np.sin(2*intervalo_angular) / np.cos(intervalo_angular)  #Intervalo de arco de curva
     
     explorados = []  #Lista de nodos explorados
@@ -46,60 +46,40 @@ def delta_star(Nodo_inicio,
             continue
         cerrados.add(pos_tuple)
 
-        if np.linalg.norm(np.array(nodo_actual.posicion) - np.array(objetivo)) < intervalo_lineal: # Si el nodo actual esta cerca del objetivo:
+        if np.linalg.norm(np.array(nodo_actual.posicion) - np.array(pos_objetivo)) < intervalo_lineal: # Si el nodo actual esta cerca del objetivo:
+            
+            print(nodo_actual)
+            print(nodo_actual.posicion)
             camino = reconstruir_camino(nodo_actual)
             # Dibuja camino final
 
             return camino, explorados
 
-############################ CAMBIO 3D -> Los cambios comienzan a partir de esta linea
-
-        posiciones_vecinos, nuevas_theta, nuevas_phi = generar_vecinos(  nodo_actual,
-                                                                intervalo_lineal,
-                                                                recta_minima,
-                                                                intervalo_arco_curva,
-                                                                intervalo_angular,
-                                                                curva_maxima)   # Se generan vecinos
-        for i, nueva_pos in enumerate(posiciones_vecinos):
-            nuevo_theta = nuevas_theta[i]
-            nuevo_phi = nuevas_phi[i]
-
-            # Cálculo de tramo recto y ángulo de curva
-            if (nuevo_theta == nodo_actual.theta) and (nuevo_phi == nodo_actual.phi):  # Si sigue con los mismos angulos
-                longitud_recta = nodo_actual.longitud_recta + intervalo_lineal
-                angulo_curva = 0
-            else:   # Si cambia el angulo
-                longitud_recta = 0
-                angulo_curva = nodo_actual.angulo_curva + intervalo_angular
-
-            # Se crea el nuevo nodo vecino
-            nuevo_nodo = Nodo(
-                posicion=nueva_pos,
-                theta=nuevo_theta,
-                phi=nuevo_phi,
-                theta_padre=nodo_actual.theta,
-                phi_padre=nodo_actual.phi,
-                longitud_recta=longitud_recta,
-                angulo_curva=angulo_curva,
-                costo=nodo_actual.costo + np.linalg.norm(np.array(nodo_actual.posicion) - np.array(nueva_pos)),
-                heuristica=heuristica(nueva_pos, objetivo, angulo_curva),
-                padre=nodo_actual
-            )
-            
-            explorados.append(nueva_pos)  # Añade el nodo a la lista de explorados
-
-            # Se almacena en la cola de prioridad junto con su coste y heurística
-            abiertos.put((nuevo_nodo.f(), next(contador), nuevo_nodo))
-
+        # Se generan Nodos vecinos
+        contador, explorados, abiertos = generar_vecinos(nodo_actual,
+                                                            intervalo_lineal,
+                                                            recta_minima,
+                                                            intervalo_arco_curva,
+                                                            intervalo_angular,
+                                                            curva_maxima,
+                                                            pos_objetivo,
+                                                            contador,
+                                                            explorados,
+                                                            abiertos)
+    print("No se encontró camino")
     return None  # No se encontró camino
 
 
-def generar_vecinos(Nodo,
+def generar_vecinos(Nodo_actual,
                     intervalo_lineal,
                     recta_minima,
                     intervalo_arco_curva,
                     intervalo_angular,
-                    curva_maxima):
+                    curva_maxima,
+                    objetivo,
+                    contador,
+                    explorados,
+                    abiertos):
 
     '''##########################################################
     Generar vecinos de un nodo
@@ -114,73 +94,61 @@ def generar_vecinos(Nodo,
     <- angulos: Lista de angulos de los nuevos nodos
     ##########################################################'''
 
-    # Continua recto usando los mismos angulos que antes
-    theta = Nodo.theta
-    phi = Nodo.phi
-    theta_padre = Nodo.theta_padre
-    phi_padre = Nodo.phi_padre
+    # Siempre esta la opcion de seguir recto
+    nueva_pos = Nodo_actual.posicion + intervalo_lineal * Nodo_actual.vector
+    nuevo_nodo = Nodo(
+        posicion=nueva_pos,
+        vector=Nodo_actual.vector,
+        vector_padre=Nodo_actual.vector,
+        longitud_recta=Nodo_actual.longitud_recta + intervalo_lineal,
+        angulo_curva=0,
+        costo=Nodo_actual.costo + intervalo_lineal,
+        heuristica=heuristica(nueva_pos, objetivo, 0),
+        padre=Nodo_actual
+    )
+    explorados.append(Nodo_actual.posicion)  # Añade el nodo a la lista de explorados
+    abiertos.put((nuevo_nodo.f(), next(contador), nuevo_nodo))  # Se almacena en la cola de prioridad junto con su coste y heurística
+
+    if 0 < Nodo_actual.angulo_curva < curva_maxima:
+        # Continua curva creando un plano entre las posiciones actual, padre y abuelo
+        vector = vector_en_plano_desde_tres_puntos(Nodo_actual.vector_padre, Nodo_actual.vector, Nodo_actual.posicion)
+        nueva_pos = Nodo_actual.posicion + intervalo_arco_curva * vector
+
+        nuevo_nodo = Nodo(
+            posicion=nueva_pos,
+            vector=vector,
+            vector_padre=Nodo_actual.vector,
+            longitud_recta=0,
+            angulo_curva=Nodo_actual.angulo_curva + intervalo_angular,
+            costo=Nodo_actual.costo + intervalo_arco_curva,
+            heuristica=heuristica(nueva_pos, objetivo, Nodo_actual.angulo_curva + intervalo_angular),
+            padre=Nodo_actual
+        )
+        explorados.append(Nodo_actual.posicion)  # Añade el nodo a la lista de explorados
+        abiertos.put((nuevo_nodo.f(), next(contador), nuevo_nodo))  # Se almacena en la cola de prioridad junto con su coste y heurística
 
 
-    if (0 < Nodo.longitud_recta < recta_minima) or (Nodo.angulo_curva > curva_maxima - intervalo_angular * 0.5):
-        movimientos = [(theta, phi)]
-    elif 0 < Nodo.angulo_curva < curva_maxima:
-        # Reflejar el ángulo como en el plano 2D
-        movimientos = [
-            (theta, phi),
-            (2 * theta - theta_padre, 2 * phi - phi_padre)
-        ]
-    else:
-        movimientos = [
-            (theta, phi),
-            (theta + intervalo_angular, phi),
-            (theta - intervalo_angular, phi),
-            (theta, phi + intervalo_angular),
-            (theta, phi - intervalo_angular)
-        ]
+    elif (Nodo_actual.longitud_recta > recta_minima):
+        # Crea el anillo de puntos a partir del ultimo nodo
+        centro_anillo = Nodo_actual.posicion + Nodo_actual.vector * (intervalo_arco_curva * np.cos(intervalo_angular))
+        anillo = generar_anillo_en_extremo(Nodo_actual.vector, centro_anillo, radio=intervalo_arco_curva*np.sin(intervalo_angular))
+        for nueva_pos in anillo:
+            nuevo_vector = nueva_pos - Nodo_actual.posicion
 
-    posiciones = []
-    nuevas_theta = []
-    nuevas_phi = []
-    for i, (t, p) in enumerate(movimientos):
-        distancia = intervalo_lineal if i == 0 else intervalo_arco_curva
-        direccion = np.array([
-            np.sin(p) * np.cos(t),
-            np.sin(p) * np.sin(t),
-            np.cos(p)
-        ])
-        nueva_pos = Nodo.posicion + distancia * direccion
-        posiciones.append(nueva_pos)
-        nuevas_theta.append(t)
-        nuevas_phi.append(p)
-
-    return posiciones, nuevas_theta, nuevas_phi
-    '''
-    if (0 < Nodo.longitud_recta < recta_minima) or (Nodo.angulo_curva > curva_maxima - intervalo_angular * 0.5):
-        angulos = [Nodo.movimiento]
-    elif 0 < Nodo.angulo_curva < curva_maxima:
-        angulos = [Nodo.movimiento, 2 * Nodo.movimiento - Nodo.movimiento_padre]
-    else:
-        angulos = [
-            Nodo.movimiento,
-            Nodo.movimiento + intervalo_angular,
-            Nodo.movimiento - intervalo_angular,
-        ]
-
-    posiciones = []
-    # Para el primer ángulo usar intervalo_lineal, para el resto intervalo_arco_curva
-    for i, angulo in enumerate(angulos):
-        distancia = intervalo_lineal if i == 0 else intervalo_arco_curva
-        desplazamiento = distancia * np.array([np.cos(angulo), np.sin(angulo)])
-        nueva_pos = Nodo.posicion + desplazamiento
-        posiciones.append(nueva_pos)
-
-    return posiciones, angulos
-    '''
-
-
-
-############################ CAMBIO 3D -> Los cambios terminan a partir de esta linea
-
+            nuevo_nodo = Nodo(
+                posicion=nueva_pos,
+                vector=nuevo_vector/np.linalg.norm(nuevo_vector),
+                vector_padre=Nodo_actual.vector,
+                longitud_recta=0,
+                angulo_curva=intervalo_angular,
+                costo=Nodo_actual.costo + intervalo_arco_curva,
+                heuristica=heuristica(nueva_pos, objetivo, intervalo_angular),
+                padre=Nodo_actual
+            )
+            explorados.append(nueva_pos)  # Añade el nodo a la lista de explorados
+            abiertos.put((nuevo_nodo.f(), next(contador), nuevo_nodo))  # Se almacena en la cola de prioridad junto con su coste y heurística
+    
+    return contador, explorados, abiertos
 
 def reconstruir_camino(nodo):
     '''##########################################################
@@ -193,7 +161,8 @@ def reconstruir_camino(nodo):
     camino = []
     current = nodo
     while current is not None:
-        camino.append(current.posicion.tolist())
+        print("Done")
+        camino.append(current.posicion.tolist())  # Usar directamente el nodo actual
         current = current.padre
     camino.reverse()
     return camino
@@ -217,7 +186,7 @@ def heuristica(posicion, objetivo, angulo_curva):
         if angulo_curva == np.deg2rad(90):
             factor = 1
         else:
-            factor = 1
+            factor = 10000
     else:
         factor = 1
 
@@ -239,3 +208,74 @@ def cerca_de_obstaculos(posicion, obstaculos, distancia_a_obstaculo):
         np.linalg.norm(posicion - np.asarray(obstaculo)) < distancia_a_obstaculo
         for obstaculo in obstaculos
     )
+
+
+def vector_en_plano_desde_tres_puntos(u, v, nodo_pos, size=1.0):
+    # Vectores en el plano
+    angulo_entre_vectores = calcular_angulo_entre_vectores(u, v)
+    
+    # Vector desde p3 en el plano con ángulo 30 grados respecto a v
+    w = vector_en_plano_con_angulo(u, v, nodo_pos, -angulo_entre_vectores)
+    return w / np.linalg.norm(w)
+
+
+def calcular_angulo_entre_vectores(u, v):
+    dot_product = np.dot(u, v)
+    dot_product = np.clip(dot_product, -1.0, 1.0)
+    angulo_rad = np.arccos(dot_product / (np.linalg.norm(u)*np.linalg.norm(v)))
+    angulo_deg = np.degrees(angulo_rad)
+    return angulo_deg
+
+
+def vector_en_plano_con_angulo(u, v, origen, angulo_grados):
+    """
+    Calcula un vector en el plano definido por u y v con origen en 'origen',
+    que forme un ángulo 'angulo_grados' respecto a v.
+    """
+    u = np.array(u)
+    v = np.array(v)
+    origen = np.array(origen)
+    # Normalizar v
+    v_unit = v / np.linalg.norm(v)
+    # Proyección de u sobre v
+    u_proj = np.dot(u, v_unit) * v_unit
+    u_ort = u - u_proj
+    u_ort_unit = u_ort / np.linalg.norm(u_ort)
+    # Convertir ángulo a radianes
+    theta = np.deg2rad(angulo_grados)
+    # Vector combinado en el plano
+    w = np.cos(theta) * v_unit + np.sin(theta) * u_ort_unit
+    return w
+
+
+def generar_anillo_en_extremo(vector, posicion, radio=0.1, num_puntos=36):
+    """
+    Genera un anillo de puntos en el plano perpendicular al vector,
+    centrado en su extremo.
+    Parámetros:
+    - vector: array-like de forma (3,), vector 3D
+    - radio: radio del anillo
+    - num_puntos: número de puntos en el anillo
+    Retorna:
+    - puntos: array (num_puntos, 3), coordenadas 3D de los puntos del anillo
+    """
+    vector = np.array(vector)
+    vector_unit = vector / np.linalg.norm(vector)
+
+    # Encontrar dos vectores ortogonales al vector dado
+    if np.allclose(vector_unit, [0, 0, 1]):
+        ort1 = np.array([1, 0, 0])
+    else:
+        ort1 = np.cross(vector_unit, [0, 0, 1])
+        ort1 /= np.linalg.norm(ort1)
+    ort2 = np.cross(vector_unit, ort1)
+
+    # Centro del anillo (extremo del vector)
+    centro = posicion
+    # Generar puntos sobre el anillo
+    puntos = []
+    for a in np.linspace(0, 2*np.pi, num_puntos, endpoint=False):
+        punto = centro + radio * (np.cos(a) * ort1 + np.sin(a) * ort2)
+        puntos.append(punto)
+
+    return np.array(puntos)

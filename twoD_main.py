@@ -17,11 +17,11 @@ import twoD_functions, twoD_functions, numpy as np, matplotlib.pyplot as plt, ti
 print("Algoritmo Delta-Star para busqueda de caminos en 2D")
 start_time = time.time()
 
-intervalo_lineal = 5
+intervalo_lineal = 1
 recta_minima = 25
 radio_curvatura = 10
 intervalo_angular = np.deg2rad(1)
-curva_maxima = np.deg2rad(45)
+curva_maxima = np.deg2rad(180)
 
 inicio = np.array([0.0, 0.0])
 objetivo = np.array([-26.0, -25.0])
