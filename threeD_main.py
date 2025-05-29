@@ -1,16 +1,18 @@
 
 import threeD_functions, threeD_functions, numpy as np, matplotlib.pyplot as plt, time
 
+print("Comenzando ejecución...")
 start_time = time.time()
 
 intervalo_lineal = 5
-recta_minima = 25
-radio_curvatura = 10
+recta_minima = 50
+radio_curvatura = 25
 intervalo_angular = np.deg2rad(5)
 curva_maxima = np.deg2rad(180) - intervalo_angular/2
+distancia_a_obstaculo = 10
 
 inicio = np.array([0.0, 0.0, 0.0])
-objetivo = np.array([35.0, -10, 10])
+objetivo = np.array([200.0, 100, 500])
 
 vector_inicio = np.array([1, 0, 0])
 vector_objetivo = np.array([1, 0, 0])
@@ -31,8 +33,6 @@ Nodo_objetivo = threeD_functions.Nodo(objetivo,
                                        0,
                                        0)
 
-distancia_a_obstaculo = 5
-
 obstaculos = [np.array([0, 20, 0]),
               np.array([20, 20, 0]),
               np.array([35, 10, 0]),
@@ -42,7 +42,7 @@ obstaculos = [np.array([0, 20, 0]),
               np.array([10, -20, 0]),
               np.array([55, 10, 0])]
 
-camino, explorados = threeD_functions.delta_star(Nodo_inicio,
+camino, explorados, costo = threeD_functions.delta_star(Nodo_inicio,
                                     Nodo_objetivo,
                                     obstaculos,
                                     distancia_a_obstaculo,
@@ -52,14 +52,17 @@ camino, explorados = threeD_functions.delta_star(Nodo_inicio,
                                     intervalo_angular,
                                     curva_maxima)
 
-print(f"Tiempo total de ejecución: {(time.time() - start_time):.2f} segundos")
+print(f"Tiempo total de ejecución: {((time.time() - start_time)/60):.2f} minutos")
 print(f"{len(explorados)} nodos explorados. {len(camino)} nodos en el camino")
+print(f"Costo total del camino: {costo:.3f}")
 
 
 # Convertir listas a arrays de numpy si aún no lo están
 camino_np = np.array(camino)
 explorados_np = np.array(list(explorados))
 objetivo = np.array(objetivo)  # Asegúrate de que sea un array 3D
+
+threeD_functions.exportar_camino_a_pts(camino)
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
@@ -100,5 +103,8 @@ mid_x = (x_vals.max() + x_vals.min()) * 0.5
 mid_y = (y_vals.max() + y_vals.min()) * 0.5
 mid_z = (z_vals.max() + z_vals.min()) * 0.5
 
+ax.set_xlim3d(mid_x - max_range, mid_x + max_range)
+ax.set_ylim3d(mid_y - max_range, mid_y + max_range)
+ax.set_zlim3d(mid_z - max_range, mid_z + max_range)
 
 plt.show()

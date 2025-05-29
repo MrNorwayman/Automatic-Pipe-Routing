@@ -36,4 +36,5 @@ class Nodo:
         self.costo = costo
 
     def f(self):
-        return 500000 * self.costo + 1 * self.heuristica
+        return 1 * self.costo + 1 * self.heuristica
+    

@@ -35,6 +35,8 @@ def delta_star(Nodo_inicio,
     pos_objetivo = Nodo_objetivo.posicion   #Posicion del objetivo
     intervalo_arco_curva = radio_curvatura / 2 * np.sin(2*intervalo_angular) / np.cos(intervalo_angular)  #Intervalo de arco de curva
     
+    cont_explorados = 1
+
     explorados = []  #Lista de nodos explorados
     while not abiertos.empty():
         _, _, nodo_actual = abiertos.get()  # Extrae el nodo con menor coste
@@ -51,9 +53,10 @@ def delta_star(Nodo_inicio,
             print(nodo_actual)
             print(nodo_actual.posicion)
             camino = reconstruir_camino(nodo_actual)
+            costo = nodo_actual.costo
             # Dibuja camino final
 
-            return camino, explorados
+            return camino, explorados, costo
 
         # Se generan Nodos vecinos
         contador, explorados, abiertos = generar_vecinos(nodo_actual,
@@ -66,6 +69,11 @@ def delta_star(Nodo_inicio,
                                                             contador,
                                                             explorados,
                                                             abiertos)
+        
+        
+        if len(explorados) > cont_explorados*1000000:
+            print(f"Iteración: {cont_explorados} millones")
+            cont_explorados += 1
     print("No se encontró camino")
     return None  # No se encontró camino
 
@@ -131,7 +139,7 @@ def generar_vecinos(Nodo_actual,
     elif (Nodo_actual.longitud_recta > recta_minima):
         # Crea el anillo de puntos a partir del ultimo nodo
         centro_anillo = Nodo_actual.posicion + Nodo_actual.vector * (intervalo_arco_curva * np.cos(intervalo_angular))
-        anillo = generar_anillo_en_extremo(Nodo_actual.vector, centro_anillo, radio=intervalo_arco_curva*np.sin(intervalo_angular))
+        anillo = generar_anillo_en_extremo(Nodo_actual.vector, centro_anillo, radio=intervalo_arco_curva*np.sin(intervalo_angular), num_puntos=int(360/np.degrees(intervalo_angular)))
         for nueva_pos in anillo:
             nuevo_vector = nueva_pos - Nodo_actual.posicion
 
@@ -145,10 +153,11 @@ def generar_vecinos(Nodo_actual,
                 heuristica=heuristica(nueva_pos, objetivo, intervalo_angular),
                 padre=Nodo_actual
             )
-            explorados.append(nueva_pos)  # Añade el nodo a la lista de explorados
+            explorados.append(Nodo_actual.posicion)  # Añade el nodo a la lista de explorados
             abiertos.put((nuevo_nodo.f(), next(contador), nuevo_nodo))  # Se almacena en la cola de prioridad junto con su coste y heurística
     
     return contador, explorados, abiertos
+
 
 def reconstruir_camino(nodo):
     '''##########################################################
@@ -161,7 +170,6 @@ def reconstruir_camino(nodo):
     camino = []
     current = nodo
     while current is not None:
-        print("Done")
         camino.append(current.posicion.tolist())  # Usar directamente el nodo actual
         current = current.padre
     camino.reverse()
@@ -186,7 +194,7 @@ def heuristica(posicion, objetivo, angulo_curva):
         if angulo_curva == np.deg2rad(90):
             factor = 1
         else:
-            factor = 10000
+            factor = 1
     else:
         factor = 1
 
@@ -240,15 +248,22 @@ def vector_en_plano_con_angulo(u, v, origen, angulo_grados):
     # Proyección de u sobre v
     u_proj = np.dot(u, v_unit) * v_unit
     u_ort = u - u_proj
-    u_ort_unit = u_ort / np.linalg.norm(u_ort)
+    # Verificar si u y v son colineales
+    norm_u_ort = np.linalg.norm(u_ort)
+    if norm_u_ort < 1e-8:
+        # u y v son colineales: simplemente rota v en el plano (en realidad no hay un plano definido distinto)
+        return v_unit  # o puedes retornar directamente np.cos(theta) * v_unit si quisieras cambiar la magnitud
+    u_ort_unit = u_ort / norm_u_ort
     # Convertir ángulo a radianes
     theta = np.deg2rad(angulo_grados)
     # Vector combinado en el plano
     w = np.cos(theta) * v_unit + np.sin(theta) * u_ort_unit
+
     return w
 
 
 def generar_anillo_en_extremo(vector, posicion, radio=0.1, num_puntos=36):
+
     """
     Genera un anillo de puntos en el plano perpendicular al vector,
     centrado en su extremo.
@@ -279,3 +294,16 @@ def generar_anillo_en_extremo(vector, posicion, radio=0.1, num_puntos=36):
         puntos.append(punto)
 
     return np.array(puntos)
+
+
+def exportar_camino_a_pts(camino, nombre_archivo='camino.pts'):
+    """
+    Exporta una lista de puntos 3D a un archivo .pts.
+    
+    Parámetros:
+    - camino: lista de listas o arrays [x, y, z]
+    - nombre_archivo: nombre del archivo de salida
+    """
+    with open(nombre_archivo, 'w') as f:
+        for punto in camino:
+            f.write(f"{punto[0]} {punto[1]} {punto[2]}\n")
