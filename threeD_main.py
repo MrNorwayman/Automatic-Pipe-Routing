@@ -5,14 +5,14 @@ print("Comenzando ejecución...")
 start_time = time.time()
 
 intervalo_lineal = 5
-recta_minima = 50
-radio_curvatura = 25
-intervalo_angular = np.deg2rad(5)
-curva_maxima = np.deg2rad(180) - intervalo_angular/2
+recta_minima = 10
+radio_curvatura = 5
+intervalo_angular = np.deg2rad(1)
+curva_maxima = np.deg2rad(135) - intervalo_angular/2
 distancia_a_obstaculo = 10
 
 inicio = np.array([0.0, 0.0, 0.0])
-objetivo = np.array([200.0, 100, 500])
+objetivo = np.array([-350.0, 30.0, 50.0])
 
 vector_inicio = np.array([1, 0, 0])
 vector_objetivo = np.array([1, 0, 0])
@@ -54,7 +54,7 @@ camino, explorados, costo = threeD_functions.delta_star(Nodo_inicio,
 
 print(f"Tiempo total de ejecución: {((time.time() - start_time)/60):.2f} minutos")
 print(f"{len(explorados)} nodos explorados. {len(camino)} nodos en el camino")
-print(f"Costo total del camino: {costo:.3f}")
+print(f"Costo total del camino: {costo:.3f} mm")
 
 
 # Convertir listas a arrays de numpy si aún no lo están

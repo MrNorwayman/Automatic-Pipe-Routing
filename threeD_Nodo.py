@@ -3,8 +3,8 @@ class Nodo:
     El nodo representa cada posibilidad que puede seguir la tuberia.
     Variables de entrada:
     -> posicion: Posicion del nodo en el espacio.
-    -> movimiento: Angulo de coordenadas polares.
-    -> movimiento_padre: Angulo de coordenadas polares del nodo padre.
+    -> vector: Vector posicion - posicion_padre
+    -> vector_padre: Vector posicion_padre - posicion_abuelo
     -> longitud_recta: Longitud del tramo recto del que forma parte.
     -> angulo_curva: Angulo de la curva que forma parte.
     -> costo: Costo acumulado de la tuberia
@@ -12,8 +12,6 @@ class Nodo:
     -> padre: Nodo padre del que se parte para crear este nodo
     ##########################################################'''
 
-
-    # CAMBIO 3D -> Se añade variable extra para angulo phi
     def __init__(self,
                  posicion,
                  vector,

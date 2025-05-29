@@ -12,19 +12,29 @@ def delta_star(Nodo_inicio,
                radio_curvatura,
                intervalo_angular,
                curva_maxima):
+    
     '''##########################################################
+
     Algoritmo de busqueda de caminos D*
+
     Variables de entrada:
     -> Nodo_inicio: Nodo de inicio
     -> Nodo_objetivo: Nodo de final
+    -> obstaculos: Lista de obstaculos
+    -> distancia_a_obstaculo: Distancia minima a un obstaculo
     -> intervalo_lineal: distancia entre los nodos en recta
     -> recta_minima: longitud minima del tramo recto
     -> radio_curvatura: radio de plegado
     -> intervalo_angular: distancia entre los nodos en curva
     -> curva_maxima: Angulo maximo de la curva
+
     Variables de salida:
-    <- movimientos: Lista de posiciones de los nuevos nodos
+    <- camino: Lista de posiciones del camino
+    <- explorados: Lista de nodos explorados    
+    <- costo: Costo total del camino
+
     ##########################################################'''
+
     abiertos = PriorityQueue()  #Crea la cola de prioridad
     contador = itertools.count()    #Contador para la cola de prioridad
     Nodo_inicio.heuristica = heuristica(Nodo_inicio.posicion, Nodo_objetivo.posicion, Nodo_inicio.angulo_curva)  #Calcula la heuristica del nodo inicial
@@ -48,11 +58,10 @@ def delta_star(Nodo_inicio,
             continue
         cerrados.add(pos_tuple)
 
-        if np.linalg.norm(np.array(nodo_actual.posicion) - np.array(pos_objetivo)) < intervalo_lineal: # Si el nodo actual esta cerca del objetivo:
+        if np.linalg.norm(np.array(nodo_actual.posicion) - np.array(pos_objetivo)) < intervalo_lineal/1.9: # Si el nodo actual esta cerca del objetivo:
             
-            print(nodo_actual)
-            print(nodo_actual.posicion)
-            camino = reconstruir_camino(nodo_actual)
+            camino, vectores, rectas = reconstruir_camino(nodo_actual, Nodo_objetivo)
+            exportar_camino_a_pts(crear_puertos_camino(camino, vectores, rectas), "tramos_rectos.pts")
             costo = nodo_actual.costo
             # Dibuja camino final
 
@@ -90,16 +99,26 @@ def generar_vecinos(Nodo_actual,
                     abiertos):
 
     '''##########################################################
-    Generar vecinos de un nodo
+
+    Generar nodos vecinos partiendo de un nodo base
+
     Variables de entrada:
-    -> Nodo: Nodo del que se parte para crear los vecinos
+    -> Nodo_actual: Nodo del que se parte para crear los vecinos
     -> intervalo_lineal: Distancia entre los nodos en recta
     -> recta_minima: Longitud minima de la recta
     -> intervalo_arco_curva: Intervalo en curvas
+    -> intervalo_angular: Intervalo de angulo de curvas
     -> curva_maxima: Angulo maximo de la curva
+    -> objetivo: Posicion del objetivo
+    -> contador: Contador para la cola de prioridad
+    -> explorados: Lista de nodos explorados
+    -> abiertos: Cola de prioridad de nodos abiertos
+
     Variables de salida:
-    <- posiciones: Lista de posiciones de los nuevos nodos
-    <- angulos: Lista de angulos de los nuevos nodos
+    <- contador: Contador actualizado
+    <- explorados: Lista de nodos explorados actualizada
+    <- abiertos: Cola de prioridad de nodos abiertos actualizada
+
     ##########################################################'''
 
     # Siempre esta la opcion de seguir recto
@@ -159,33 +178,54 @@ def generar_vecinos(Nodo_actual,
     return contador, explorados, abiertos
 
 
-def reconstruir_camino(nodo):
+def reconstruir_camino(nodo, objetivo):
+
     '''##########################################################
+
     Funcion que devuelve el camino calculado por el algoritmo
+
     Variables de entrada:
     -> nodo: Nodo objetivo
+    -> pos_objetivo: Posicion del objetivo
+
     Variables de salida:
     <- camino: Lista de posiciones del camino
+
     ##########################################################'''
-    camino = []
+
+    camino = [objetivo.posicion.tolist()]
+    vectores = [objetivo.vector.tolist()]
+    rectas = []  # Lista para almacenar las longitudes de los tramos rectos
     current = nodo
     while current is not None:
         camino.append(current.posicion.tolist())  # Usar directamente el nodo actual
+        vectores.append(current.vector.tolist())
+        rectas.append(current.longitud_recta)  # Añadir la longitud del tramo recto
+
         current = current.padre
+        
     camino.reverse()
-    return camino
+    vectores.reverse()
+    rectas.reverse()
+    return camino, vectores, rectas
 
 
 def heuristica(posicion, objetivo, angulo_curva):    
+
     '''##########################################################
+
     Funcion que devuelve la distancia al objetivo. Cuanto mayor sea el valor, menor prioridad tiene
+
     Variables de entrada:
     -> posicion: Posicion actual
     -> objetivo: Posicion del objetivo
     -> angulo_curva: Angulo de curva
+
     Variables de salida:
-    <- return: Distancia al objetivo
+    <- factor * distancia: Valor de la heuristica
+
     ##########################################################'''
+
     posicion = np.asarray(posicion)
     objetivo = np.asarray(objetivo)
     distancia = np.linalg.norm(posicion - objetivo)
@@ -202,15 +242,21 @@ def heuristica(posicion, objetivo, angulo_curva):
 
 
 def cerca_de_obstaculos(posicion, obstaculos, distancia_a_obstaculo):
+
     '''##########################################################
+
     Funcion que devuelve True si el nodo esta cerca de un obstaculo
+
     Variables de entrada:
     -> posicion: Posicion actual
     -> obstaculos: Lista de obstaculos
-    -> intervalo_lineal: Distancia entre los nodos en recta
+    -> distancia_a_obstaculo: Distancia minima a un obstaculo
+
     Variables de salida:
     <- return: True si el nodo esta cerca de un obstaculo
+
     ##########################################################'''
+
     posicion = np.asarray(posicion)  # Convertir solo una vez
     return any(
         np.linalg.norm(posicion - np.asarray(obstaculo)) < distancia_a_obstaculo
@@ -218,7 +264,22 @@ def cerca_de_obstaculos(posicion, obstaculos, distancia_a_obstaculo):
     )
 
 
-def vector_en_plano_desde_tres_puntos(u, v, nodo_pos, size=1.0):
+def vector_en_plano_desde_tres_puntos(u, v, nodo_pos):
+
+    '''##########################################################
+
+    Funcion que devuelve un vector unitario que sigue la trayectoria de dos vectores dados
+
+    Variables de entrada:
+    -> u: Vector padre
+    -> v: Vector actual
+    -> nodo_pos: Posicion actual del nodo
+
+    Variables de salida:
+    <- w: Vector unitario que sigue la curva que forman u y v
+    
+    ##########################################################'''
+
     # Vectores en el plano
     angulo_entre_vectores = calcular_angulo_entre_vectores(u, v)
     
@@ -228,6 +289,20 @@ def vector_en_plano_desde_tres_puntos(u, v, nodo_pos, size=1.0):
 
 
 def calcular_angulo_entre_vectores(u, v):
+
+    '''##########################################################
+
+    Funcion que devuelve el angulo entre dos vectores
+
+    Variables de entrada:
+    -> u: Vector padre
+    -> v: Vector actual
+
+    Variables de salida:
+    <- angulo_deg: Angulo entre los dos vectores en grados
+
+    ##########################################################'''
+
     dot_product = np.dot(u, v)
     dot_product = np.clip(dot_product, -1.0, 1.0)
     angulo_rad = np.arccos(dot_product / (np.linalg.norm(u)*np.linalg.norm(v)))
@@ -236,10 +311,22 @@ def calcular_angulo_entre_vectores(u, v):
 
 
 def vector_en_plano_con_angulo(u, v, origen, angulo_grados):
-    """
-    Calcula un vector en el plano definido por u y v con origen en 'origen',
-    que forme un ángulo 'angulo_grados' respecto a v.
-    """
+
+    '''##########################################################
+
+    Funcion que devuelve un vector unitario que sigue la trayectoria de dos vectores dados
+
+    Variables de entrada:
+    -> u: Vector padre
+    -> v: Vector actual
+    -> origen: Posicion del nodo
+    -> angulo_grados: Angulo en grados que se quiere aplicar al vector v respecto a u
+
+    Variables de salida:
+    <- w: Vector NO unitario que sigue la curva que forman u y v
+    
+    ##########################################################'''
+
     u = np.array(u)
     v = np.array(v)
     origen = np.array(origen)
@@ -264,16 +351,21 @@ def vector_en_plano_con_angulo(u, v, origen, angulo_grados):
 
 def generar_anillo_en_extremo(vector, posicion, radio=0.1, num_puntos=36):
 
-    """
-    Genera un anillo de puntos en el plano perpendicular al vector,
-    centrado en su extremo.
-    Parámetros:
-    - vector: array-like de forma (3,), vector 3D
-    - radio: radio del anillo
-    - num_puntos: número de puntos en el anillo
-    Retorna:
-    - puntos: array (num_puntos, 3), coordenadas 3D de los puntos del anillo
-    """
+    '''##########################################################
+
+    Funcion que genera un anillo de puntos para comenzar una curva
+
+    Variables de entrada:
+    -> vector: Vector de la recta donde comienza la curva
+    -> posicion: Posicion del centro del anillo
+    -> radio: Radio del anillo
+    -> num_puntos: Numero de puntos a generar en el anillo
+
+    Variables de salida:
+    <- puntos: Array de puntos que forman el anillo
+
+    ##########################################################'''
+
     vector = np.array(vector)
     vector_unit = vector / np.linalg.norm(vector)
 
@@ -297,13 +389,34 @@ def generar_anillo_en_extremo(vector, posicion, radio=0.1, num_puntos=36):
 
 
 def exportar_camino_a_pts(camino, nombre_archivo='camino.pts'):
-    """
-    Exporta una lista de puntos 3D a un archivo .pts.
+
+    '''##########################################################
+
+    Funcion que exporta los puntos del camino a un archivo .pts
+
+    Variables de entrada:
+    -> camino: Solucion encontrada para la tuberia
+    -> nombre_archivo: Nombre del archivo donde se guardara el camino
+
+    Variables de salida:
+    <- None
     
-    Parámetros:
-    - camino: lista de listas o arrays [x, y, z]
-    - nombre_archivo: nombre del archivo de salida
-    """
+    ##########################################################'''
+
     with open(nombre_archivo, 'w') as f:
         for punto in camino:
             f.write(f"{punto[0]} {punto[1]} {punto[2]}\n")
+    return None
+
+
+def crear_puertos_camino(camino, _vectores, rectas):
+    tramos_rectos = []
+    for i in range(len(rectas)-1):
+        if (rectas[i] == 0 and rectas[i+1] > 0) and (i < len(rectas)-1):
+            tramos_rectos.append(camino[i])
+        
+        if (rectas[i] > 0 and rectas[i+1] == 0) and (i < len(rectas)-1):
+            tramos_rectos.append(camino[i])
+    
+    tramos_rectos.append(camino[-1])
+    return tramos_rectos
